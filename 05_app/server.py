@@ -295,6 +295,69 @@ def set_style(style: Style) -> dict:
     return {"ok": True}
 
 
+# Two modes, same graph topology. Prototype proves the architecture on a small
+# local card; production is what the client's book is actually rendered with.
+PRESETS = {
+    "prototype_sdxl": {
+        "label": "Prototype — SDXL-Lightning (local, 4 GB card)",
+        "template": "prototype_sdxl_api.json",
+        "style": {
+            "checkpoint": "sdxl_lightning_4step.safetensors",
+            # Lightning is a 4-step model: more steps or any CFG above ~1.5
+            # produces washed-out, overcooked panels.
+            "steps": 4,
+            "cfg": 1.0,
+            "sampler": "euler",
+            "scheduler": "sgm_uniform",
+            "width": 1024,
+            "height": 1024,
+        },
+        "notes": [
+            "4 steps, CFG 1.0 — raising either breaks Lightning",
+            "~40s per panel on a 4 GB card; use --lowvram",
+            "Proves topology and continuity, not final quality",
+        ],
+    },
+    "production_flux": {
+        "label": "Production — FLUX.1 (rented 24 GB+ GPU)",
+        "template": "solo_panel_api.json",
+        "style": {
+            "checkpoint": "flux1-dev.safetensors",
+            "steps": 25,
+            "cfg": 3.5,
+            "sampler": "euler",
+            "scheduler": "simple",
+            "width": 1024,
+            "height": 1024,
+        },
+        "notes": [
+            "Needs 16-24 GB VRAM for inference, 24 GB+ for LoRA training",
+            "FLUX.1 [dev] is NON-COMMERCIAL — confirm licensing with the client",
+            "FLUX.1 [schnell] is Apache 2.0 if the book will be sold",
+        ],
+    },
+}
+
+
+@app.get("/api/presets")
+def get_presets() -> dict:
+    return {k: {"label": v["label"], "template": v["template"], "notes": v["notes"]}
+            for k, v in PRESETS.items()}
+
+
+@app.post("/api/presets/{name}")
+def apply_preset(name: str) -> dict:
+    """Switch sampler settings between prototype and production."""
+    if name not in PRESETS:
+        raise HTTPException(404, f"unknown preset: {name}")
+    p = load()
+    p["style"].update(PRESETS[name]["style"])
+    p["mode"] = name
+    save(p)
+    return {"ok": True, "style": p["style"], "notes": PRESETS[name]["notes"],
+            "template": PRESETS[name]["template"]}
+
+
 def _upsert(kind: str, item: dict) -> dict:
     p = load()
     if item.get("id"):

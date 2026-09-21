@@ -277,6 +277,19 @@ pre.out{background:#0F0D0A;border:1px solid var(--line);border-radius:8px;paddin
 
   <!-- STYLE -->
   <section id="style">
+    <div class="card" style="max-width:720px;margin-bottom:16px">
+      <h3>Mode</h3>
+      <p style="color:var(--ink2);font-size:13.5px;margin:0 0 12px">
+        Same graph topology either way — only the model and sampler settings change.
+        Prototype locally, then switch to production on rented hardware.</p>
+      <div class="btns" style="margin-top:0">
+        <button class="ghost" id="presetProto">Prototype — SDXL local</button>
+        <button class="ghost" id="presetProd">Production — FLUX cloud</button>
+      </div>
+      <div id="presetNotes"></div>
+      <div class="msg" id="pmsg2"></div>
+    </div>
+
     <div class="card" style="max-width:720px">
       <h3>Global art style — applied to every panel</h3>
       <label for="stPrompt">Style prompt</label>
@@ -586,6 +599,23 @@ el("saveStyle").onclick = async () => {
     await load(); note("stmsg","saved","ok");
   }catch(e){ note("stmsg", e.message, "err"); }
 };
+
+/* ---- mode presets ---- */
+async function applyPreset(name){
+  try{
+    const r = await api(`/api/presets/${name}`, {method:"POST"});
+    await load();
+    el("presetNotes").innerHTML =
+      `<div class="warn"><b>${name.replace("_"," ")} applied</b><ul>${
+        r.notes.map(n=>`<li>${n}</li>`).join("")}</ul></div>`;
+    // Point the queue at this mode's workflow template if it exists.
+    const opt = [...el("tmpl").options].find(o => o.value === r.template);
+    if(opt) el("tmpl").value = r.template;
+    note("pmsg2", `switched to ${name}`, "ok");
+  }catch(e){ note("pmsg2", e.message, "err"); }
+}
+el("presetProto").onclick = () => applyPreset("prototype_sdxl");
+el("presetProd").onclick  = () => applyPreset("production_flux");
 
 /* ---- batch queue ---- */
 el("queueAll").onclick = async () => {

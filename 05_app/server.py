@@ -21,6 +21,7 @@ Binds to 127.0.0.1. On a cloud GPU reach it over an SSH tunnel:
 from __future__ import annotations
 
 import json
+import re
 import time
 import uuid
 from copy import deepcopy
@@ -66,6 +67,8 @@ def blank_project() -> dict:
             "scheduler": "simple",
             "width": 1024,
             "height": 1024,
+            "controlnet_depth": "controlnet-depth-sdxl.safetensors",
+            "controlnet_pose": "controlnet-openpose-sdxl.safetensors",
         },
         "characters": [],
         "scenes": [],
@@ -110,6 +113,10 @@ class Style(BaseModel):
     scheduler: str = "simple"
     width: int = 1024
     height: int = 1024
+    # Which ControlNet file to load. A scene with a depth reference uses the
+    # depth model; one with only a pose reference uses the pose model.
+    controlnet_depth: str = "controlnet-depth-sdxl.safetensors"
+    controlnet_pose: str = "controlnet-openpose-sdxl.safetensors"
 
 
 class Character(BaseModel):
@@ -187,6 +194,20 @@ def compose_prompt(p: dict, panel: dict) -> dict:
     tier1 = [c for c in chars if c["tier"] == 1 and c.get("lora_path")]
     tier2 = [c for c in chars if c["tier"] == 2]
 
+    # Depth staging takes priority over pose when a scene supplies both: it
+    # locks architecture, which is what panel-to-panel continuity needs.
+    scene = scene or {}
+    # Defaults cover projects saved before these fields existed, so an older
+    # project.json does not silently lose its ControlNet.
+    depth_model = style.get("controlnet_depth") or Style().controlnet_depth
+    pose_model = style.get("controlnet_pose") or Style().controlnet_pose
+    if scene.get("depth_ref"):
+        cn_model, cn_image = depth_model, scene["depth_ref"]
+    elif scene.get("pose_ref"):
+        cn_model, cn_image = pose_model, scene["pose_ref"]
+    else:
+        cn_model, cn_image = "", ""
+
     return {
         "positive": ", ".join(x for x in parts if x),
         "negative": style["negative"],
@@ -196,9 +217,11 @@ def compose_prompt(p: dict, panel: dict) -> dict:
         "ipadapter_refs": [r for c in tier2 for r in c.get("ref_images", [])],
         "seed": panel.get("seed") or (scene or {}).get("seed") or 0,
         "controlnet": {
-            "pose": (scene or {}).get("pose_ref", ""),
-            "depth": (scene or {}).get("depth_ref", ""),
-            "strength": (scene or {}).get("controlnet_strength", 0.7),
+            "pose": scene.get("pose_ref", ""),
+            "depth": scene.get("depth_ref", ""),
+            "model": cn_model,
+            "image": cn_image,
+            "strength": scene.get("controlnet_strength", 0.7),
         },
         "width": style["width"],
         "height": style["height"],
@@ -233,9 +256,95 @@ def _warn(chars, scene, tier1, tier2) -> list[str]:
     return w
 
 
-def build_workflow(spec: dict, template_name: str) -> dict:
+PLACEHOLDER = re.compile(r"%%[A-Z0-9_]+%%")
+
+# A node is bypassed when the named input is empty. The map says which of its
+# own inputs should replace each of its outputs, so consumers can be rewired
+# to what fed it. This is the "modular bypass switch" in graph form: one
+# template serves solo, multi-character and action panels instead of three.
+BYPASS_RULES = {
+    "LoraLoader": {
+        "when_empty": "lora_name",
+        "passthrough": {0: "model", 1: "clip"},
+    },
+    "ControlNetApplyAdvanced": {
+        "when_empty": None,          # decided by its control image, see below
+        "passthrough": {0: "positive", 1: "negative"},
+    },
+    "IPAdapterApply": {
+        "when_empty": None,
+        "passthrough": {0: "model"},
+    },
+}
+
+
+def _rewire(wf: dict, dead_id: str, outputs: dict) -> None:
+    """Point every consumer of dead_id's outputs at its upstream sources."""
+    for node in wf.values():
+        for key, value in list(node.get("inputs", {}).items()):
+            if isinstance(value, list) and len(value) == 2 and value[0] == dead_id:
+                replacement = outputs.get(value[1])
+                if replacement is None:
+                    raise HTTPException(
+                        500,
+                        f"cannot bypass node {dead_id}: output {value[1]} has no "
+                        f"passthrough defined")
+                node["inputs"][key] = replacement
+
+
+def _prune_orphans(wf: dict) -> None:
+    """Drop nodes nothing reaches from an output node (SaveImage/PreviewImage)."""
+    sinks = [nid for nid, n in wf.items()
+             if n.get("class_type") in ("SaveImage", "PreviewImage")]
+    reachable: set[str] = set()
+    stack = list(sinks)
+    while stack:
+        nid = stack.pop()
+        if nid in reachable or nid not in wf:
+            continue
+        reachable.add(nid)
+        for value in wf[nid].get("inputs", {}).values():
+            if isinstance(value, list) and len(value) == 2 and isinstance(value[0], str):
+                stack.append(value[0])
+    for nid in [n for n in wf if n not in reachable]:
+        del wf[nid]
+
+
+def apply_bypasses(wf: dict, spec: dict) -> list[str]:
+    """Remove nodes whose inputs are not supplied, rewiring around them."""
+    bypassed: list[str] = []
+    has_control = bool(spec["controlnet"]["model"] and spec["controlnet"]["image"])
+
+    for nid, node in list(wf.items()):
+        cls = node.get("class_type")
+        rule = BYPASS_RULES.get(cls)
+        if not rule:
+            continue
+
+        if cls == "LoraLoader":
+            drop = not str(node["inputs"].get("lora_name", "")).strip()
+        elif cls == "ControlNetApplyAdvanced":
+            drop = not has_control
+        elif cls == "IPAdapterApply":
+            drop = not spec["ipadapter_refs"]
+        else:
+            drop = False
+        if not drop:
+            continue
+
+        outputs = {idx: node["inputs"][src] for idx, src in rule["passthrough"].items()}
+        _rewire(wf, nid, outputs)
+        del wf[nid]
+        bypassed.append(f"{cls}({nid})")
+
+    _prune_orphans(wf)
+    return bypassed
+
+
+def build_workflow(spec: dict, template_name: str) -> tuple[dict, list[str]]:
     """
-    Fill a ComfyUI API-format template with this panel's values.
+    Fill a ComfyUI API-format template with this panel's values, then bypass
+    any node the panel does not supply inputs for.
 
     Templates use "%%PLACEHOLDER%%" strings so a graph exported from ComfyUI
     can be parameterised without this code needing to understand node wiring.
@@ -245,6 +354,7 @@ def build_workflow(spec: dict, template_name: str) -> dict:
         raise HTTPException(400, f"workflow template not found: {template_name}")
     raw = path.read_text(encoding="utf-8")
 
+    cn = spec["controlnet"]
     repl = {
         "%%POSITIVE%%": spec["positive"],
         "%%NEGATIVE%%": spec["negative"],
@@ -256,19 +366,34 @@ def build_workflow(spec: dict, template_name: str) -> dict:
         "%%WIDTH%%": str(spec["width"]),
         "%%HEIGHT%%": str(spec["height"]),
         "%%CHECKPOINT%%": spec["checkpoint"],
-        "%%POSE_REF%%": spec["controlnet"]["pose"],
-        "%%DEPTH_REF%%": spec["controlnet"]["depth"],
-        "%%CN_STRENGTH%%": str(spec["controlnet"]["strength"]),
+        "%%CONTROLNET%%": cn["model"],
+        "%%CONTROL_IMAGE%%": cn["image"],
+        "%%POSE_REF%%": cn["pose"],
+        "%%DEPTH_REF%%": cn["depth"],
+        "%%CN_STRENGTH%%": str(cn["strength"]),
+        "%%CN_END%%": str(cn.get("end_percent", 0.5)),
         "%%LORA1%%": spec["loras"][0]["path"] if spec["loras"] else "",
         "%%LORA1_WEIGHT%%": str(spec["loras"][0]["weight"]) if spec["loras"] else "0",
         "%%IPADAPTER_REF%%": spec["ipadapter_refs"][0] if spec["ipadapter_refs"] else "",
     }
     for k, v in repl.items():
         raw = raw.replace(k, json.dumps(v)[1:-1])   # escape for JSON safety
+
+    left = PLACEHOLDER.findall(raw)
+    if left:
+        raise HTTPException(
+            500,
+            f"template '{template_name}' has placeholders with no value: "
+            f"{sorted(set(left))}")
+
     try:
-        return json.loads(raw)
+        wf = json.loads(raw)
     except json.JSONDecodeError as e:
         raise HTTPException(500, f"template produced invalid JSON: {e}")
+
+    wf.pop("_comment", None)
+    bypassed = apply_bypasses(wf, spec)
+    return wf, bypassed
 
 
 # ---------------------------------------------------------------- routes
@@ -450,7 +575,7 @@ async def queue_panel(panel_id: str, body: dict | None = None) -> dict:
     p = load()
     panel = find(p["panels"], panel_id)
     spec = compose_prompt(p, panel)
-    workflow = build_workflow(spec, template)
+    workflow, bypassed = build_workflow(spec, template)
 
     try:
         async with httpx.AsyncClient(timeout=15) as client:
@@ -465,7 +590,8 @@ async def queue_panel(panel_id: str, body: dict | None = None) -> dict:
     panel["status"] = "queued"
     panel["prompt_id"] = prompt_id
     save(p)
-    return {"ok": True, "prompt_id": prompt_id, "warnings": spec["warnings"]}
+    return {"ok": True, "prompt_id": prompt_id, "warnings": spec["warnings"],
+            "bypassed": bypassed}
 
 
 @app.post("/api/queue/batch")

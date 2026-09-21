@@ -54,7 +54,45 @@ free. Fixes, most correct first:
    the character region. This is the "latent regional prompting" in the
    project pitch and is the production answer.
 
-Not yet calibrated. This is the next experiment.
+### 3a. Lowering strength and end_percent does NOT fix it — tested
+
+Re-rendered at `strength 0.55`, `end_percent 0.5`, prompt "kneeling with head
+bowed". Still standing, arms raised. The figure's silhouette is baked into the
+depth map, so the model is not being nudged toward that pose — it is being
+handed its shape. Fixes 2 and 3 are insufficient on their own.
+
+### 3b. An empty-set depth map frees the pose but loses the character — tested
+
+Rendered the location with no character, took depth from that, then staged two
+opposite poses on it. The pose is no longer locked. But with no figure in the
+depth map nothing reserves space for one, and both panels put tiny figures in
+the far distance. Scale and placement became uncontrolled.
+
+**Both failure modes are now bracketed:**
+
+| Depth source | Environment | Character |
+|---|---|---|
+| Panel containing a figure | locked | pose locked too — cannot act |
+| Empty environment | locked | scale and placement uncontrolled |
+
+**Conclusion: depth alone cannot both lock the set and stage the actor.** One
+signal cannot do two jobs.
+
+**The production answer is two signals**, which is what the project pitch
+already specifies — now derived from evidence rather than assumed:
+
+- **Depth**, taken from an empty-set plate → architecture and perspective
+- **OpenPose** stick figure → character size, position and pose
+
+Both SDXL ControlNet models are installed. Wiring them together is the next
+experiment, and it is the last open design question before FLUX.
+
+### Production workflow this implies
+
+Each scene is rendered **once** as an empty set. That plate becomes the
+scene's permanent staging reference, and every panel in the scene is composed
+inside it — exactly how a physical set works. This maps onto the Studio data
+model already: `depth_ref` lives on the Scene, not the Panel.
 
 ## 4. Text identity alone is not enough
 

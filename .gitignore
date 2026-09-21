@@ -1,0 +1,16 @@
+# Datasets and weights are large and often client-confidential — never commit
+01_dataset/refs/
+01_dataset/dataset/
+02_training/output/
+*.safetensors
+*.ckpt
+*.pt
+
+# Generated panels
+03_workflows/output/
+
+# Scratch
+_t/
+__pycache__/
+*.pyc
+.venv/

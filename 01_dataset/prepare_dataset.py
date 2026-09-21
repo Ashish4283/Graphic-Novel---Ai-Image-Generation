@@ -157,6 +157,43 @@ def find_duplicates(reports: list[ImageReport]) -> list[tuple[str, str, int]]:
     return pairs
 
 
+def angle_variation(reports: list[ImageReport]) -> dict:
+    """
+    Do images labelled as different angles actually look different?
+
+    A generator that ignores the requested angle produces a folder of
+    near-identical front views with filenames claiming otherwise. Filename
+    checks pass, duplicate checks pass (they are genuinely different renders),
+    and the resulting LoRA learns that "side profile" means "front view".
+
+    Compare the mean perceptual distance WITHIN an angle group against the
+    distance BETWEEN groups. If crossing an angle boundary changes the image
+    no more than staying inside one does, the labels carry no information.
+    """
+    usable = [r for r in reports if not r.fatal and r.dhash and r.angle != "unlabelled"]
+    by_angle: dict[str, list[ImageReport]] = defaultdict(list)
+    for r in usable:
+        by_angle[r.angle].append(r)
+    if len(by_angle) < 2:
+        return {"checked": False, "reason": "need at least two labelled angles"}
+
+    within, between = [], []
+    for i, a in enumerate(usable):
+        for b in usable[i + 1:]:
+            d = hamming(a.dhash, b.dhash)
+            (within if a.angle == b.angle else between).append(d)
+    if not within or not between:
+        return {"checked": False, "reason": "not enough pairs"}
+
+    w = sum(within) / len(within)
+    b = sum(between) / len(between)
+    # Different angles should look clearly more different than two shots of
+    # the same angle. Anything close to parity means the label is decorative.
+    ratio = b / w if w else 0.0
+    return {"checked": True, "within": round(w, 1), "between": round(b, 1),
+            "ratio": round(ratio, 2), "suspect": ratio < 1.25}
+
+
 def audit(folder: Path) -> dict:
     files = sorted(p for p in folder.iterdir()
                    if p.suffix.lower() in IMAGE_SUFFIXES and p.is_file())
@@ -188,6 +225,15 @@ def audit(folder: Path) -> dict:
             f"{len(aspects)} different aspect ratios; bucketing will crop "
             "inconsistently — consider standardising")
 
+    variation = angle_variation(reports)
+    if variation.get("suspect"):
+        problems.append(
+            f"angle labels look meaningless: images of different angles are no "
+            f"more different than images of the same angle "
+            f"(within {variation['within']}, between {variation['between']}). "
+            "The generator probably ignored the requested angle — check a "
+            "'side' and a 'back' image by eye before training")
+
     return {
         "folder": str(folder),
         "total": len(reports),
@@ -195,6 +241,7 @@ def audit(folder: Path) -> dict:
         "fatal": len(reports) - len(usable),
         "angles": dict(angles),
         "duplicates": dupes,
+        "variation": variation,
         "problems": problems,
         "images": [asdict(r) for r in reports],
     }
@@ -224,6 +271,13 @@ def print_audit(a: dict) -> bool:
         print("\nnear-duplicates")
         for x, y, d in a["duplicates"]:
             print(f"  distance {d}: {x}  ~  {y}")
+
+    v = a.get("variation", {})
+    if v.get("checked"):
+        verdict = "SUSPECT" if v["suspect"] else "ok"
+        print(f"\nangle variation: {verdict}  "
+              f"(same angle {v['within']}, different angle {v['between']}, "
+              f"ratio {v['ratio']})")
 
     print("\nsummary")
     if a["problems"]:

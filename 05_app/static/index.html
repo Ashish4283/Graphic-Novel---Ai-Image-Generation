@@ -8,103 +8,128 @@
 :root{
   --bg:#14120F; --panel:#1C1A16; --panel2:#252119; --line:#332D24;
   --ink:#F0EAE0; --ink2:#B5AC9D; --ink3:#7C7466;
-  --accent:#D08A3C; --accent-dim:#8A5C28;
-  --ok:#5F9E6E; --warn:#C9A227; --err:#C4614F;
+  --accent:#D08A3C; --ok:#5F9E6E; --warn:#C9A227; --err:#C4614F;
   --t1:#8A6BC4; --t2:#3F8C99;
   --ui:system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:ui-monospace,"Cascadia Mono",Consolas,monospace;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.55 var(--ui)}
-.wrap{max-width:1240px;margin:0 auto;padding:0 18px 70px}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--ui)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 18px 80px}
 h1,h2,h3{margin:0;font-weight:600}
 button,input,select,textarea{font-family:inherit;font-size:14px}
 
 /* header */
-header{display:flex;align-items:center;gap:14px;padding:18px 0 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-h1{font-size:19px;letter-spacing:-.01em}
-#pname{background:transparent;border:1px solid transparent;color:var(--ink2);padding:4px 8px;border-radius:6px;min-width:220px}
+header{display:flex;align-items:center;gap:14px;padding:18px 0 14px;flex-wrap:wrap}
+h1{font-size:20px}
+#pname{background:transparent;border:1px solid transparent;color:var(--ink2);padding:5px 9px;border-radius:6px;min-width:230px}
 #pname:hover,#pname:focus{border-color:var(--line);background:var(--panel);outline:none}
-.pill{margin-left:auto;font:11.5px var(--mono);padding:5px 11px;border-radius:99px;border:1px solid var(--line);color:var(--ink3);background:var(--panel)}
+.pill{margin-left:auto;font-size:12.5px;padding:6px 13px;border-radius:99px;border:1px solid var(--line);color:var(--ink3);background:var(--panel)}
 .pill.on{color:var(--ok);border-color:rgba(95,158,110,.45)}
 .pill.off{color:var(--err);border-color:rgba(196,97,79,.45)}
 
-/* tabs */
-nav{display:flex;gap:4px;padding:12px 0;flex-wrap:wrap}
-nav button{background:transparent;border:1px solid transparent;color:var(--ink3);padding:7px 14px;border-radius:7px;cursor:pointer}
-nav button:hover{color:var(--ink2)}
-nav button.on{background:var(--panel);border-color:var(--line);color:var(--accent)}
+/* step bar */
+.steps{display:flex;gap:8px;padding:6px 0 16px;flex-wrap:wrap}
+.step{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:11px 14px;cursor:pointer;text-align:left;color:var(--ink2);position:relative}
+.step:hover{border-color:var(--ink3)}
+.step.on{border-color:var(--accent);background:var(--panel2)}
+.step .n{font:11px var(--mono);color:var(--ink3);display:block}
+.step .t{font-weight:600;font-size:14.5px;color:var(--ink);display:block;margin-top:2px}
+.step .s{font-size:12px;color:var(--ink3);display:block;margin-top:3px}
+.step.done .s{color:var(--ok)}
+.step .tick{position:absolute;top:10px;right:12px;color:var(--ok);font-size:15px;display:none}
+.step.done .tick{display:block}
 
 section{display:none}
 section.on{display:block}
 
-/* cards + layout */
-.grid{display:grid;grid-template-columns:340px 1fr;gap:16px}
-@media(max-width:900px){.grid{grid-template-columns:1fr}}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
-.card h3{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:13px}
+/* explainer */
+.explain{background:linear-gradient(180deg,var(--panel2),var(--panel));
+  border:1px solid var(--line);border-left:3px solid var(--accent);
+  border-radius:10px;padding:16px 20px;margin-bottom:18px}
+.explain h2{font-size:17px;margin-bottom:7px}
+.explain p{margin:0 0 8px;color:var(--ink2);max-width:76ch}
+.explain p:last-child{margin-bottom:0}
+.explain b{color:var(--ink)}
+.explain .todo{margin:10px 0 0;padding-left:20px;color:var(--ink2)}
+.explain .todo li{margin:4px 0}
 
-label{display:block;font-size:12px;color:var(--ink2);margin:11px 0 5px}
-input,select,textarea{width:100%;padding:8px 10px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);color:var(--ink)}
+.grid{display:grid;grid-template-columns:350px 1fr;gap:16px}
+@media(max-width:920px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:17px}
+.card h3{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin-bottom:13px}
+
+label{display:block;font-size:13px;color:var(--ink2);margin:13px 0 5px}
+label .hint{display:block;font-size:11.5px;color:var(--ink3);font-weight:400;margin-top:2px}
+input,select,textarea{width:100%;padding:9px 11px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);color:var(--ink)}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
-textarea{resize:vertical;min-height:62px}
+textarea{resize:vertical;min-height:66px}
 .row{display:flex;gap:10px}.row>*{flex:1}
 
-button.act{background:var(--accent);color:#1A1509;border:0;border-radius:7px;padding:9px 14px;font-weight:600;cursor:pointer}
+button.act{background:var(--accent);color:#1A1509;border:0;border-radius:7px;padding:10px 16px;font-weight:600;cursor:pointer}
 button.act:hover{filter:brightness(1.1)}
 button.act:disabled{opacity:.45;cursor:not-allowed}
-button.ghost{background:var(--panel2);color:var(--ink2);border:1px solid var(--line);border-radius:7px;padding:8px 13px;cursor:pointer}
+button.ghost{background:var(--panel2);color:var(--ink2);border:1px solid var(--line);border-radius:7px;padding:9px 14px;cursor:pointer}
 button.ghost:hover{border-color:var(--accent);color:var(--accent)}
-button.danger{background:transparent;color:var(--err);border:1px solid rgba(196,97,79,.4);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px}
-.btns{display:flex;gap:9px;margin-top:15px;flex-wrap:wrap}
+button.danger{background:transparent;color:var(--err);border:1px solid rgba(196,97,79,.4);border-radius:6px;padding:6px 11px;cursor:pointer;font-size:12.5px}
+.btns{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap}
 
-/* lists */
-.list{display:flex;flex-direction:column;gap:7px;max-height:560px;overflow:auto}
+.list{display:flex;flex-direction:column;gap:7px;max-height:520px;overflow:auto}
 .item{background:var(--panel2);border:1px solid transparent;border-radius:8px;padding:11px 13px;cursor:pointer;display:flex;gap:11px;align-items:center}
 .item:hover{border-color:var(--line)}
 .item.sel{border-color:var(--accent)}
 .item .nm{font-weight:600;font-size:14px}
 .item .sub{font-size:12px;color:var(--ink3)}
 .item .right{margin-left:auto;display:flex;gap:7px;align-items:center}
-.tag{font:10.5px var(--mono);padding:2px 7px;border-radius:99px;white-space:nowrap}
+.tag{font:10.5px var(--mono);padding:3px 8px;border-radius:99px;white-space:nowrap}
 .tag.t1{background:rgba(138,107,196,.18);color:var(--t1)}
 .tag.t2{background:rgba(63,140,153,.18);color:var(--t2)}
-.thumb{width:34px;height:34px;border-radius:6px;object-fit:cover;background:var(--panel)}
+.thumb{width:38px;height:38px;border-radius:6px;object-fit:cover;background:var(--panel)}
 
-/* stats */
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:10px;margin-bottom:18px}
 .stat{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:13px 15px}
 .stat b{display:block;font:600 22px/1.1 var(--mono);font-variant-numeric:tabular-nums}
-.stat span{font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em}
+.stat span{font-size:11px;color:var(--ink3)}
 
-/* panels table */
 table{width:100%;border-collapse:collapse}
-th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle}
+th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);font-size:13.5px}
 th{font:10.5px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);font-weight:500}
 tbody tr:hover{background:var(--panel2)}
-td.st span{font:10.5px var(--mono);padding:2px 8px;border-radius:99px}
+td.st span{font:10.5px var(--mono);padding:3px 9px;border-radius:99px}
 .s-draft{background:var(--panel2);color:var(--ink3)}
 .s-queued{background:rgba(201,162,39,.18);color:var(--warn)}
 .s-done{background:rgba(95,158,110,.18);color:var(--ok)}
 .s-failed{background:rgba(196,97,79,.18);color:var(--err)}
 
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.chip{font-size:12px;padding:4px 10px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);cursor:pointer;color:var(--ink2)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.chip{font-size:12.5px;padding:5px 11px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);cursor:pointer;color:var(--ink2)}
 .chip.on{border-color:var(--accent);color:var(--accent)}
 
 pre.out{background:#0F0D0A;border:1px solid var(--line);border-radius:8px;padding:13px;
-  font:12px/1.65 var(--mono);color:var(--ink2);white-space:pre-wrap;word-break:break-word;max-height:330px;overflow:auto;margin:0}
-.warn{background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.4);border-radius:8px;padding:11px 14px;margin-top:11px}
-.warn b{display:block;font:10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--warn);margin-bottom:6px}
-.warn ul{margin:0;padding-left:18px;color:var(--ink2);font-size:13px}
-.msg{font:12px var(--mono);color:var(--ink3);min-height:17px;margin-top:9px}
+  font:12px/1.65 var(--mono);color:var(--ink2);white-space:pre-wrap;word-break:break-word;max-height:300px;overflow:auto;margin:0}
+.warn{background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.4);border-radius:8px;padding:12px 15px;margin-top:12px}
+.warn b{display:block;font-size:12px;color:var(--warn);margin-bottom:6px}
+.warn ul{margin:0;padding-left:19px;color:var(--ink2);font-size:13px}
+.msg{font-size:12.5px;color:var(--ink3);min-height:18px;margin-top:10px}
 .msg.err{color:var(--err)}
 .msg.ok{color:var(--ok)}
-.empty{color:var(--ink3);font-size:13px;padding:14px 0;text-align:center}
-.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-.gal figure{margin:0;background:var(--panel2);border-radius:8px;overflow:hidden}
+.empty{color:var(--ink3);font-size:13.5px;padding:22px 14px;text-align:center;border:1px dashed var(--line);border-radius:9px}
+.empty b{display:block;color:var(--ink2);margin-bottom:5px}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:9px}
+.gal figure{margin:0;background:var(--panel2);border-radius:8px;overflow:hidden;position:relative}
 .gal img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
-.gal figcaption{font:10.5px var(--mono);color:var(--ink3);padding:6px 8px;text-align:center}
+.gal figcaption{font:10.5px var(--mono);color:var(--ink3);padding:6px;text-align:center;word-break:break-all}
+.gal .x{position:absolute;top:5px;right:5px;background:rgba(0,0,0,.65);color:#fff;border:0;border-radius:5px;padding:2px 7px;cursor:pointer;font-size:12px}
+
+/* files tab */
+.paths{display:flex;flex-direction:column;gap:9px}
+.pathrow{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:12px 15px}
+.pathrow .t{font-weight:600;font-size:14px}
+.pathrow .n{font-size:12.5px;color:var(--ink3);margin:3px 0 7px}
+.pathrow code{display:block;font:12px var(--mono);color:var(--accent);background:var(--panel);padding:7px 10px;border-radius:6px;word-break:break-all;cursor:pointer}
+.pathrow code:hover{background:#0F0D0A}
+.pathrow .meta{font-size:11.5px;color:var(--ink3);margin-top:5px}
 </style>
 </head>
 <body>
@@ -112,115 +137,177 @@ pre.out{background:#0F0D0A;border:1px solid var(--line);border-radius:8px;paddin
 
   <header>
     <h1>Graphic Novel Studio</h1>
-    <input id="pname" title="Project name">
-    <span class="pill" id="comfy">checking ComfyUI…</span>
+    <input id="pname" title="Your book's name" placeholder="Name your book">
+    <span class="pill" id="comfy">checking…</span>
   </header>
 
-  <nav>
-    <button data-tab="dash" class="on">Dashboard</button>
-    <button data-tab="chars">Characters</button>
-    <button data-tab="scenes">Scenes</button>
-    <button data-tab="panels">Panels</button>
-    <button data-tab="style">Style</button>
-  </nav>
+  <div class="steps" id="stepbar">
+    <button class="step on" data-tab="look"><span class="n">STEP 1</span><span class="t">Look</span><span class="s" id="s-look">not set</span><span class="tick">✓</span></button>
+    <button class="step" data-tab="chars"><span class="n">STEP 2</span><span class="t">Characters</span><span class="s" id="s-chars">none yet</span><span class="tick">✓</span></button>
+    <button class="step" data-tab="places"><span class="n">STEP 3</span><span class="t">Places</span><span class="s" id="s-places">none yet</span><span class="tick">✓</span></button>
+    <button class="step" data-tab="pics"><span class="n">STEP 4</span><span class="t">Pictures</span><span class="s" id="s-pics">none yet</span><span class="tick">✓</span></button>
+    <button class="step" data-tab="make"><span class="n">STEP 5</span><span class="t">Make them</span><span class="s" id="s-make">nothing made</span><span class="tick">✓</span></button>
+    <button class="step" data-tab="files"><span class="n">HELP</span><span class="t">Where are my files?</span><span class="s">folders on this PC</span></button>
+  </div>
 
-  <!-- DASHBOARD -->
-  <section id="dash" class="on">
-    <div class="stats" id="stats"></div>
+  <!-- STEP 1 - LOOK -->
+  <section id="look" class="on">
+    <div class="explain">
+      <h2>Step 1 — Decide how every picture should look</h2>
+      <p>This is the <b>art style for your whole book</b>. It gets added to every single picture, so page 200 looks like page 1. Set it once.</p>
+      <ul class="todo">
+        <li>Pick a mode below — start with <b>Photoreal</b> if your book looks like photographs</li>
+        <li>Describe the look in words, like "cinematic photo, warm desert light"</li>
+        <li>Press Save</li>
+      </ul>
+    </div>
     <div class="grid">
       <div class="card">
-        <h3>Production queue</h3>
+        <h3>Mode</h3>
         <p style="color:var(--ink2);font-size:13.5px;margin:0 0 12px">
-          Queue every draft panel in page order, then watch them complete.</p>
-        <label for="tmpl">Workflow template</label>
-        <select id="tmpl"></select>
-        <div class="btns">
-          <button class="act" id="queueAll">Queue all drafts</button>
-          <button class="ghost" id="refresh">Refresh status</button>
+          Which picture engine to use. You can change this later.</p>
+        <div class="btns" style="margin-top:0;flex-direction:column">
+          <button class="ghost" id="presetPhoto" style="text-align:left">📷 Photoreal — looks like photographs<span style="display:block;font-size:11.5px;color:var(--ink3)">RealVisXL, works on this PC</span></button>
+          <button class="ghost" id="presetProto" style="text-align:left">🎨 Illustrated — painted look<span style="display:block;font-size:11.5px;color:var(--ink3)">SDXL Lightning, fastest</span></button>
+          <button class="ghost" id="presetProd" style="text-align:left">☁️ Best quality — needs a rented computer<span style="display:block;font-size:11.5px;color:var(--ink3)">FLUX, will not run on this PC</span></button>
         </div>
-        <div class="msg" id="qmsg"></div>
+        <div id="presetNotes"></div>
+        <div class="msg" id="pmsg2"></div>
       </div>
       <div class="card">
-        <h3>Recent output</h3>
-        <div class="gal" id="gal"></div>
-        <div class="empty" id="galEmpty">Nothing rendered yet.</div>
+        <h3>The look</h3>
+        <label for="stPrompt">Describe the style
+          <span class="hint">Added to every picture. Example: cinematic photograph, 85mm lens, natural colour</span></label>
+        <textarea id="stPrompt"></textarea>
+        <label for="stNeg">Things you never want
+          <span class="hint">Example: cartoon, watermark, extra fingers, blurry</span></label>
+        <textarea id="stNeg"></textarea>
+        <details style="margin-top:14px">
+          <summary style="cursor:pointer;color:var(--ink3);font-size:13px">Advanced settings (you can ignore these)</summary>
+          <div class="row"><div><label for="stCkpt">Engine file</label><input id="stCkpt"></div></div>
+          <div class="row">
+            <div><label for="stSteps">Steps</label><input id="stSteps" type="number"></div>
+            <div><label for="stCfg">Strength</label><input id="stCfg" type="number" step="0.1"></div>
+            <div><label for="stW">Width</label><input id="stW" type="number"></div>
+            <div><label for="stH">Height</label><input id="stH" type="number"></div>
+          </div>
+          <div class="row">
+            <div><label for="stSamp">Sampler</label><input id="stSamp"></div>
+            <div><label for="stSched">Schedule</label><input id="stSched"></div>
+            <div><label for="stLora">Style add-on</label><input id="stLora"></div>
+            <div><label for="stLw">Add-on strength</label><input id="stLw" type="number" step="0.05"></div>
+          </div>
+        </details>
+        <div class="btns"><button class="act" id="saveStyle">Save the look</button></div>
+        <div class="msg" id="stmsg"></div>
       </div>
     </div>
   </section>
 
-  <!-- CHARACTERS -->
+  <!-- STEP 2 - CHARACTERS -->
   <section id="chars">
+    <div class="explain">
+      <h2>Step 2 — Add the people in your story</h2>
+      <p>The computer has no idea what your characters look like. You teach it by giving it <b>pictures of each person</b>. Then it can draw them the same way every time.</p>
+      <ul class="todo">
+        <li>Press <b>+ Add a person</b> and type their name</li>
+        <li>Choose <b>Main character</b> (appears on many pages) or <b>Extra</b> (appears a few times)</li>
+        <li>Give it pictures — the easiest way is <b>Import a folder</b>, which grabs every picture in one go</li>
+        <li>Or press <b>Make pictures for me</b> and it creates them from one photo</li>
+      </ul>
+      <p style="color:var(--ink3);font-size:13px">Tip: if someone appears young <i>and</i> old, add them twice — they look like different people.</p>
+    </div>
     <div class="grid">
       <div class="card">
-        <h3>Cast</h3>
+        <h3>Your cast</h3>
         <div class="list" id="charList"></div>
-        <div class="btns"><button class="ghost" id="newChar">+ New character</button></div>
+        <div class="btns"><button class="act" id="newChar">+ Add a person</button></div>
       </div>
       <div class="card">
-        <h3 id="charTitle">Character</h3>
+        <h3 id="charTitle">Person</h3>
         <div class="row">
-          <div><label for="cName">Name</label><input id="cName" placeholder="Moses"></div>
-          <div><label for="cVariant">Variant</label>
-            <select id="cVariant"><option value="">single age</option>
-              <option>young</option><option>older</option></select></div>
+          <div><label for="cName">Their name</label><input id="cName" placeholder="Moses"></div>
+          <div><label for="cVariant">Age version
+            <span class="hint">Only if they appear at two ages</span></label>
+            <select id="cVariant"><option value="">just one age</option><option>young</option><option>older</option></select></div>
         </div>
-        <label for="cTier">Tier</label>
+        <label for="cTier">How important are they?</label>
         <select id="cTier">
-          <option value="1">Tier 1 — trained FLUX LoRA (leads, many pages)</option>
-          <option value="2">Tier 2 — IPAdapter / PuLID reference (supporting cast)</option>
+          <option value="1">Main character — on many pages (we train the computer properly)</option>
+          <option value="2">Extra — on a few pages (we just show it a photo)</option>
         </select>
         <div id="t1fields">
           <div class="row">
-            <div><label for="cTrigger">Trigger token</label><input id="cTrigger" placeholder="mosesv1"></div>
-            <div><label for="cWeight">LoRA weight</label><input id="cWeight" type="number" step="0.05" value="0.85"></div>
+            <div><label for="cTrigger">Secret code word
+              <span class="hint">A made-up word, e.g. mosesold. Leave blank and we make one.</span></label><input id="cTrigger" placeholder="mosesold"></div>
+            <div><label for="cWeight">Strength</label><input id="cWeight" type="number" step="0.05" value="0.85"></div>
           </div>
-          <label for="cLora">LoRA file</label>
-          <input id="cLora" placeholder="moses_young_rank32.safetensors">
+          <label for="cLora">Trained file <span class="hint">You get this after training. Leave blank for now.</span></label>
+          <input id="cLora" placeholder="moses_old.safetensors">
         </div>
-        <label for="cAppear">Appearance (costume, distinguishing detail)</label>
-        <textarea id="cAppear" placeholder="grey robe, wooden staff, full beard"></textarea>
-        <label>Reference images</label>
-        <input type="file" id="cRefFile" accept="image/*" multiple>
-        <div class="chips" id="cRefs"></div>
-        <label for="cNotes">Notes</label>
-        <textarea id="cNotes"></textarea>
+        <label for="cAppear">What do they look like?
+          <span class="hint">Clothes and features. Example: long white beard, brown robe, wooden staff</span></label>
+        <textarea id="cAppear"></textarea>
         <div class="btns">
-          <button class="act" id="saveChar">Save character</button>
+          <button class="act" id="saveChar">Save person</button>
           <button class="danger" id="delChar">Delete</button>
         </div>
         <div class="msg" id="cmsg"></div>
+
+        <h3 style="margin-top:22px">Their pictures <span id="refCount" style="color:var(--ink3);text-transform:none;letter-spacing:0"></span></h3>
+        <div id="refCoverage" style="font-size:12.5px;color:var(--ink3);margin-bottom:10px"></div>
+        <div class="btns" style="margin-top:0">
+          <button class="ghost" id="btnImport">📁 Import a folder</button>
+          <button class="ghost" id="btnUpload">⬆️ Choose files</button>
+          <button class="ghost" id="btnGen">✨ Make pictures for me</button>
+          <button class="ghost" id="btnExport">➡️ Send to training</button>
+        </div>
+        <input type="file" id="refFiles" accept="image/*" multiple hidden>
+        <div class="msg" id="refmsg"></div>
+        <div class="gal" id="refGal" style="margin-top:12px"></div>
       </div>
     </div>
   </section>
 
-  <!-- SCENES -->
-  <section id="scenes">
+  <!-- STEP 3 - PLACES -->
+  <section id="places">
+    <div class="explain">
+      <h2>Step 3 — Add the places your story happens</h2>
+      <p>A "place" is a location like <b>a mountain top</b> or <b>a throne room</b>. Describing it once here means every picture set there looks like the <b>same room</b>, instead of a new one each time.</p>
+      <ul class="todo">
+        <li>Press <b>+ Add a place</b> and name it</li>
+        <li>Describe it in words</li>
+        <li><b>Important:</b> press <b>Lock this place</b> — without it the background changes in every picture</li>
+      </ul>
+    </div>
     <div class="grid">
       <div class="card">
-        <h3>Scenes</h3>
+        <h3>Your places</h3>
         <div class="list" id="sceneList"></div>
-        <div class="btns"><button class="ghost" id="newScene">+ New scene</button></div>
+        <div class="btns"><button class="act" id="newScene">+ Add a place</button></div>
       </div>
       <div class="card">
-        <h3>Scene</h3>
-        <label for="sName">Name</label>
-        <input id="sName" placeholder="Pharaoh's throne room">
-        <label for="sEnv">Environment — locked description reused by every panel</label>
-        <textarea id="sEnv" placeholder="vast sandstone hall, carved pillars, shafts of light from high windows"></textarea>
+        <h3>Place</h3>
+        <label for="sName">Name it</label>
+        <input id="sName" placeholder="Mount Sinai summit">
+        <label for="sEnv">Describe it
+          <span class="hint">Example: bare rocky summit, storm clouds, shafts of light</span></label>
+        <textarea id="sEnv"></textarea>
         <div class="row">
-          <div><label for="sSeed">Seed (0 = random)</label><input id="sSeed" type="number" value="0"></div>
-          <div><label for="sCn">ControlNet strength</label><input id="sCn" type="number" step="0.05" value="0.7"></div>
+          <div><label for="sSeed">Lock number
+            <span class="hint">0 means "different every time" — press Lock below</span></label><input id="sSeed" type="number" value="0"></div>
+          <div><label for="sCn">How strictly to hold it
+            <span class="hint">0.5 is a good start</span></label><input id="sCn" type="number" step="0.05" value="0.6"></div>
         </div>
-        <label>OpenPose reference</label>
-        <input type="file" id="sPoseFile" accept="image/*">
-        <div class="chips" id="sPose"></div>
-        <label>Depth staging reference</label>
+        <div class="btns" style="margin-top:10px">
+          <button class="ghost" id="lockScene">🔒 Lock this place</button>
+        </div>
+        <label style="margin-top:14px">Layout picture (optional)
+          <span class="hint">A picture of the empty place. Pictures set here copy its shape.</span></label>
         <input type="file" id="sDepthFile" accept="image/*">
         <div class="chips" id="sDepth"></div>
-        <label for="sNotes">Notes</label>
-        <textarea id="sNotes"></textarea>
         <div class="btns">
-          <button class="act" id="saveScene">Save scene</button>
+          <button class="act" id="saveScene">Save place</button>
           <button class="danger" id="delScene">Delete</button>
         </div>
         <div class="msg" id="smsg"></div>
@@ -228,21 +315,31 @@ pre.out{background:#0F0D0A;border:1px solid var(--line);border-radius:8px;paddin
     </div>
   </section>
 
-  <!-- PANELS -->
-  <section id="panels">
+  <!-- STEP 4 - PICTURES -->
+  <section id="pics">
+    <div class="explain">
+      <h2>Step 4 — Say what happens in each picture</h2>
+      <p>One row here = <b>one picture in your book</b>. Pick the page number, the place, who is in it, and what they are doing.</p>
+      <ul class="todo">
+        <li>Fill in the boxes and press <b>Save picture</b></li>
+        <li>Press <b>Check it first</b> to see exactly what will be drawn — and any warnings</li>
+        <li>Repeat for every picture. Then go to Step 5.</li>
+      </ul>
+    </div>
     <div class="grid">
       <div class="card">
-        <h3>Panel</h3>
+        <h3>Picture details</h3>
         <div class="row">
-          <div><label for="pPage">Page</label><input id="pPage" type="number" value="1" min="1"></div>
-          <div><label for="pNum">Panel #</label><input id="pNum" type="number" value="1" min="1"></div>
+          <div><label for="pPage">Page number</label><input id="pPage" type="number" value="1" min="1"></div>
+          <div><label for="pNum">Which picture on that page</label><input id="pNum" type="number" value="1" min="1"></div>
         </div>
-        <label for="pScene">Scene</label>
+        <label for="pScene">Where does it happen?</label>
         <select id="pScene"></select>
-        <label>Characters in this panel</label>
+        <label>Who is in it? <span class="hint">Click to select</span></label>
         <div class="chips" id="pChars"></div>
-        <label for="pAction">Action</label>
-        <textarea id="pAction" placeholder="raising his staff toward the parted sea"></textarea>
+        <label for="pAction">What is happening?
+          <span class="hint">Example: raising his staff towards the sea</span></label>
+        <textarea id="pAction"></textarea>
         <div class="row">
           <div><label for="pCam">Camera</label>
             <select id="pCam">
@@ -251,406 +348,403 @@ pre.out{background:#0F0D0A;border:1px solid var(--line);border-radius:8px;paddin
               <option>low angle</option><option>high angle</option>
               <option>over-the-shoulder</option><option>dutch angle</option>
             </select></div>
-          <div><label for="pSeed">Seed (0 = scene seed)</label><input id="pSeed" type="number" value="0"></div>
+          <div><label for="pSeed">Lock number <span class="hint">0 = use the place's</span></label><input id="pSeed" type="number" value="0"></div>
         </div>
         <div class="btns">
-          <button class="act" id="savePanel">Save panel</button>
-          <button class="ghost" id="previewPanel">Preview prompt</button>
-          <button class="ghost" id="queuePanel">Queue</button>
+          <button class="act" id="savePanel">Save picture</button>
+          <button class="ghost" id="previewPanel">🔍 Check it first</button>
+          <button class="ghost" id="queuePanel">▶️ Make this one</button>
           <button class="danger" id="delPanel">Delete</button>
         </div>
         <div class="msg" id="pmsg"></div>
         <div id="pWarn"></div>
-        <label style="margin-top:14px">Composed prompt</label>
-        <pre class="out" id="pPreview">Press "Preview prompt" to see exactly what this panel will send to ComfyUI.</pre>
+        <label style="margin-top:14px">What will be drawn</label>
+        <pre class="out" id="pPreview">Press "Check it first" to see this.</pre>
       </div>
       <div class="card">
-        <h3>Panels</h3>
+        <h3>All your pictures</h3>
         <table>
-          <thead><tr><th>Pg</th><th>#</th><th>Scene</th><th>Cast</th><th>Status</th></tr></thead>
+          <thead><tr><th>Page</th><th>#</th><th>Place</th><th>Who</th><th>Made?</th></tr></thead>
           <tbody id="panelRows"></tbody>
         </table>
-        <div class="empty" id="panelEmpty">No panels yet.</div>
+        <div id="panelEmpty" class="empty"><b>No pictures yet</b>Fill in the form on the left and press Save picture.</div>
       </div>
     </div>
   </section>
 
-  <!-- STYLE -->
-  <section id="style">
-    <div class="card" style="max-width:720px;margin-bottom:16px">
-      <h3>Mode</h3>
-      <p style="color:var(--ink2);font-size:13.5px;margin:0 0 12px">
-        Same graph topology either way — only the model and sampler settings change.
-        Prototype locally, then switch to production on rented hardware.</p>
-      <div class="btns" style="margin-top:0">
-        <button class="ghost" id="presetProto">Prototype — SDXL local</button>
-        <button class="ghost" id="presetProd">Production — FLUX cloud</button>
-      </div>
-      <div id="presetNotes"></div>
-      <div class="msg" id="pmsg2"></div>
+  <!-- STEP 5 - MAKE -->
+  <section id="make">
+    <div class="explain">
+      <h2>Step 5 — Make the pictures</h2>
+      <p>This sends your pictures to the drawing engine. Each one takes about <b>30 seconds</b> on this computer.</p>
+      <ul class="todo">
+        <li>Check the badge at the top right says <b>Picture engine: ready</b></li>
+        <li>Press <b>Make all unfinished pictures</b></li>
+        <li>Press <b>Check progress</b> now and then — finished ones appear below</li>
+      </ul>
     </div>
+    <div class="stats" id="stats"></div>
+    <div class="grid">
+      <div class="card">
+        <h3>Make them</h3>
+        <label for="tmpl">Recipe <span class="hint">Leave as it is unless you know why</span></label>
+        <select id="tmpl"></select>
+        <div class="btns">
+          <button class="act" id="queueAll">▶️ Make all unfinished pictures</button>
+          <button class="ghost" id="refresh">🔄 Check progress</button>
+        </div>
+        <div class="msg" id="qmsg"></div>
+      </div>
+      <div class="card">
+        <h3>Finished pictures</h3>
+        <div class="gal" id="gal"></div>
+        <div class="empty" id="galEmpty"><b>Nothing made yet</b>Press "Make all unfinished pictures".</div>
+      </div>
+    </div>
+  </section>
 
-    <div class="card" style="max-width:720px">
-      <h3>Global art style — applied to every panel</h3>
-      <label for="stPrompt">Style prompt</label>
-      <textarea id="stPrompt"></textarea>
-      <label for="stNeg">Negative prompt</label>
-      <textarea id="stNeg"></textarea>
-      <div class="row">
-        <div><label for="stCkpt">Checkpoint</label><input id="stCkpt"></div>
-        <div><label for="stLora">Style LoRA</label><input id="stLora"></div>
-      </div>
-      <div class="row">
-        <div><label for="stLw">Style LoRA weight</label><input id="stLw" type="number" step="0.05"></div>
-        <div><label for="stSteps">Steps</label><input id="stSteps" type="number"></div>
-        <div><label for="stCfg">CFG</label><input id="stCfg" type="number" step="0.1"></div>
-      </div>
-      <div class="row">
-        <div><label for="stW">Width</label><input id="stW" type="number"></div>
-        <div><label for="stH">Height</label><input id="stH" type="number"></div>
-        <div><label for="stSamp">Sampler</label><input id="stSamp"></div>
-        <div><label for="stSched">Scheduler</label><input id="stSched"></div>
-      </div>
-      <div class="btns"><button class="act" id="saveStyle">Save style</button></div>
-      <div class="msg" id="stmsg"></div>
+  <!-- FILES -->
+  <section id="files">
+    <div class="explain">
+      <h2>Where everything is kept on this computer</h2>
+      <p>Click any path to copy it, then paste it into File Explorer.</p>
     </div>
+    <div class="paths" id="pathList"></div>
   </section>
 </div>
 
 <script>
-const $ = s => document.querySelector(s);
 const el = id => document.getElementById(id);
-let P = null, selChar = null, selScene = null, selPanel = null;
+let P=null, selChar=null, selScene=null, selPanel=null, charDraft=null, sceneDraft={};
 
 async function api(path, opts){
   const r = await fetch(path, opts);
-  if(!r.ok){
-    let d; try { d = (await r.json()).detail; } catch { d = r.statusText; }
-    throw new Error(typeof d === "string" ? d : JSON.stringify(d));
-  }
-  return r.status === 204 ? null : r.json();
+  if(!r.ok){ let d; try{ d=(await r.json()).detail; }catch{ d=r.statusText; }
+    throw new Error(typeof d==="string"?d:JSON.stringify(d)); }
+  return r.status===204?null:r.json();
 }
-function note(id, text, kind){
-  const n = el(id); n.textContent = text || "";
-  n.className = "msg" + (kind ? " " + kind : "");
-  if(text) setTimeout(() => { if(n.textContent === text) n.textContent = ""; }, 5000);
-}
+const J = (m,b) => ({method:m, headers:{"Content-Type":"application/json"}, body:JSON.stringify(b)});
+function note(id,text,kind){ const n=el(id); n.textContent=text||""; n.className="msg"+(kind?" "+kind:"");
+  if(text) setTimeout(()=>{ if(n.textContent===text) n.textContent=""; },6000); }
 
-/* ---- tabs ---- */
-document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
-  document.querySelectorAll("nav button").forEach(x => x.classList.remove("on"));
-  document.querySelectorAll("section").forEach(x => x.classList.remove("on"));
+document.querySelectorAll(".step").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".step").forEach(x=>x.classList.remove("on"));
+  document.querySelectorAll("section").forEach(x=>x.classList.remove("on"));
   b.classList.add("on"); el(b.dataset.tab).classList.add("on");
 });
 
-/* ---- load ---- */
 async function load(){
   P = await api("/api/project");
   el("pname").value = P.name;
-  renderChars(); renderScenes(); renderPanels(); renderStyle(); renderStats();
+  renderChars(); renderScenes(); renderPanels(); renderStyle(); renderStats(); renderProgress();
 }
-el("pname").onchange = async e => {
-  await api("/api/project/name", {method:"PUT", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({name: e.target.value})});
-};
+el("pname").onchange = e => api("/api/project/name", J("PUT",{name:e.target.value}));
 
-/* ---- stats + comfy ---- */
+function renderProgress(){
+  const styled = (P.style.prompt||"").trim().length > 10;
+  const setStep=(id,done,txt)=>{ const b=[...document.querySelectorAll(".step")].find(x=>x.dataset.tab===id);
+    if(b) b.classList.toggle("done",done); const s=el("s-"+id); if(s) s.textContent=txt; };
+  setStep("look", styled, styled ? "style set" : "not set yet");
+  setStep("chars", P.characters.length>0, P.characters.length ? `${P.characters.length} added` : "none yet");
+  setStep("places", P.scenes.length>0, P.scenes.length ? `${P.scenes.length} added` : "none yet");
+  setStep("pics", P.panels.length>0, P.panels.length ? `${P.panels.length} planned` : "none yet");
+  const done = P.panels.filter(x=>x.status==="done").length;
+  setStep("make", done>0, done ? `${done} made` : "nothing made");
+}
+
 async function renderStats(){
-  const s = await api("/api/stats");
-  const st = s.by_status || {};
-  el("stats").innerHTML = [
-    ["Characters", s.characters], ["Tier 1 LoRA", s.tier1], ["Tier 2 ref", s.tier2],
-    ["Scenes", s.scenes], ["Pages", s.pages], ["Panels", s.panels],
-    ["Done", st.done || 0], ["Queued", st.queued || 0]
-  ].map(([k,v]) => `<div class="stat"><b>${v}</b><span>${k}</span></div>`).join("");
+  const s = await api("/api/stats"); const st=s.by_status||{};
+  el("stats").innerHTML = [["People",s.characters],["Places",s.scenes],["Pictures",s.panels],
+    ["Pages",s.pages],["Made",st.done||0],["Waiting",st.queued||0],["Problems",st.failed||0]]
+    .map(([k,v])=>`<div class="stat"><b>${v}</b><span>${k}</span></div>`).join("");
 }
 async function checkComfy(){
-  const p = el("comfy");
-  try{
-    const s = await api("/api/comfy/status");
-    p.className = "pill " + (s.online ? "on" : "off");
-    p.textContent = s.online ? "ComfyUI connected" : "ComfyUI offline";
-    p.title = s.online ? "" : (s.error || "");
-  }catch{ p.className = "pill off"; p.textContent = "ComfyUI offline"; }
+  const p=el("comfy");
+  try{ const s=await api("/api/comfy/status");
+    p.className="pill "+(s.online?"on":"off");
+    p.textContent = s.online ? "Picture engine: ready" : "Picture engine: not running";
+    p.title = s.online ? "" : "Run START.bat, or check the ComfyUI window";
+  }catch{ p.className="pill off"; p.textContent="Picture engine: not running"; }
 }
 
-/* ---- uploads ---- */
-async function upload(file){
-  const fd = new FormData(); fd.append("file", file);
-  return api("/api/upload", {method:"POST", body: fd});
-}
-function refChips(container, names, onRemove){
-  container.innerHTML = names.length
-    ? names.map((n,i) => `<span class="chip on" data-i="${i}">
-        <img src="/api/ref/${n}" style="width:18px;height:18px;border-radius:3px;vertical-align:-4px;margin-right:6px">
-        ${n.slice(0,10)}… ✕</span>`).join("")
-    : `<span class="chip">none</span>`;
-  container.querySelectorAll(".chip[data-i]").forEach(c =>
-    c.onclick = () => onRemove(+c.dataset.i));
-}
-
-/* ---- characters ---- */
+/* ---------- characters ---------- */
+function blankChar(){ return {name:"",tier:1,variant:"",trigger:"",lora_path:"",lora_weight:0.85,ref_images:[],appearance:""}; }
 function renderChars(){
-  el("charList").innerHTML = P.characters.length ? P.characters.map(c => `
+  el("charList").innerHTML = P.characters.length ? P.characters.map(c=>`
     <div class="item ${selChar===c.id?"sel":""}" data-id="${c.id}">
-      ${c.ref_images?.length ? `<img class="thumb" src="/api/ref/${c.ref_images[0]}">`
-                             : `<div class="thumb"></div>`}
+      ${c.ref_images?.length?`<img class="thumb" src="/api/ref/${c.ref_images[0]}">`:`<div class="thumb"></div>`}
       <div><div class="nm">${c.name}${c.variant?` <span class="sub">(${c.variant})</span>`:""}</div>
-      <div class="sub">${c.tier===1 ? (c.lora_path||"no LoRA set") : `${c.ref_images?.length||0} reference(s)`}</div></div>
-      <div class="right"><span class="tag t${c.tier}">T${c.tier}</span></div>
-    </div>`).join("") : `<div class="empty">No characters yet.</div>`;
-  el("charList").querySelectorAll(".item").forEach(i =>
-    i.onclick = () => { selChar = i.dataset.id; fillChar(); renderChars(); });
-  el("pChars") && renderPanelChipList();
+      <div class="sub">${(c.ref_images||[]).length} picture(s)</div></div>
+      <div class="right"><span class="tag t${c.tier}">${c.tier===1?"Main":"Extra"}</span></div></div>`).join("")
+    : `<div class="empty"><b>No people yet</b>Press "+ Add a person" to start.</div>`;
+  el("charList").querySelectorAll(".item").forEach(i=>i.onclick=()=>{ selChar=i.dataset.id; fillChar(); renderChars(); });
+  renderPanelChips();
 }
-function blankChar(){ return {name:"",tier:1,variant:"",trigger:"",lora_path:"",
-  lora_weight:0.85,ref_images:[],appearance:"",notes:""}; }
-let charDraft = blankChar();
-function fillChar(){
-  const c = selChar ? P.characters.find(x => x.id === selChar) : blankChar();
+async function fillChar(){
+  const c = selChar ? P.characters.find(x=>x.id===selChar) : blankChar();
   charDraft = JSON.parse(JSON.stringify(c));
-  el("charTitle").textContent = selChar ? `Character — ${c.name}` : "New character";
-  el("cName").value = c.name; el("cVariant").value = c.variant || "";
-  el("cTier").value = c.tier; el("cTrigger").value = c.trigger || "";
-  el("cWeight").value = c.lora_weight ?? 0.85; el("cLora").value = c.lora_path || "";
-  el("cAppear").value = c.appearance || ""; el("cNotes").value = c.notes || "";
-  el("t1fields").style.display = String(c.tier) === "1" ? "" : "none";
-  refChips(el("cRefs"), charDraft.ref_images || [], i => {
-    charDraft.ref_images.splice(i,1); refChips(el("cRefs"), charDraft.ref_images, ()=>{}); fillRefs();
+  el("charTitle").textContent = selChar ? c.name : "New person";
+  el("cName").value=c.name; el("cVariant").value=c.variant||""; el("cTier").value=c.tier;
+  el("cTrigger").value=c.trigger||""; el("cWeight").value=c.lora_weight??0.85;
+  el("cLora").value=c.lora_path||""; el("cAppear").value=c.appearance||"";
+  el("t1fields").style.display = String(c.tier)==="1" ? "" : "none";
+  await renderRefs();
+}
+async function renderRefs(){
+  if(!selChar){ el("refGal").innerHTML=""; el("refCount").textContent=""; el("refCoverage").textContent=""; return; }
+  const info = await api(`/api/characters/${selChar}/refs`).catch(()=>null);
+  if(!info) return;
+  el("refCount").textContent = `— ${info.count} picture(s)`;
+  const need = info.missing_required_angles || [];
+  el("refCoverage").innerHTML = info.count === 0
+    ? "Give this person some pictures using the buttons below."
+    : `From: ${Object.entries(info.by_angle).map(([k,v])=>`${k.replace("_"," ")} ${v}`).join(" · ")}`
+      + (need.length ? ` <span style="color:var(--warn)">— still needs: ${need.join(", ").replace(/_/g," ")}</span>` : "")
+      + (info.pending_jobs ? ` <span style="color:var(--warn)">— ${info.pending_jobs} still being made</span>` : "");
+  el("refGal").innerHTML = info.refs.map(r=>`<figure>
+    <button class="x" data-r="${r}">✕</button>
+    <img src="/api/ref/${r}" loading="lazy"><figcaption>${r.split("/").pop()}</figcaption></figure>`).join("");
+  el("refGal").querySelectorAll(".x").forEach(b=>b.onclick=async()=>{
+    await fetch(`/api/characters/${selChar}/refs?name=${encodeURIComponent(b.dataset.r)}`,{method:"DELETE"});
+    await load(); renderRefs();
   });
 }
-function fillRefs(){ refChips(el("cRefs"), charDraft.ref_images || [], i => {
-  charDraft.ref_images.splice(i,1); fillRefs(); }); }
-el("cTier").onchange = e => el("t1fields").style.display = e.target.value === "1" ? "" : "none";
-el("newChar").onclick = () => { selChar = null; fillChar(); renderChars(); };
-el("cRefFile").onchange = async e => {
-  for(const f of e.target.files){ const r = await upload(f); charDraft.ref_images.push(r.name); }
-  fillRefs(); e.target.value = "";
-};
+el("cTier").onchange = e => el("t1fields").style.display = e.target.value==="1" ? "" : "none";
+el("newChar").onclick = () => { selChar=null; fillChar(); renderChars(); };
 el("saveChar").onclick = async () => {
   try{
-    const body = {id: selChar, name: el("cName").value.trim(), tier: +el("cTier").value,
-      variant: el("cVariant").value, trigger: el("cTrigger").value.trim(),
-      lora_path: el("cLora").value.trim(), lora_weight: +el("cWeight").value,
-      ref_images: charDraft.ref_images, appearance: el("cAppear").value,
-      notes: el("cNotes").value};
-    if(!body.name) throw new Error("name is required");
-    const saved = await api("/api/characters", {method:"POST",
-      headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
-    selChar = saved.id; await load(); fillChar();
-    note("cmsg", "saved", "ok");
+    const name = el("cName").value.trim();
+    if(!name) throw new Error("Please type a name first");
+    const saved = await api("/api/characters", J("POST",{id:selChar, name, tier:+el("cTier").value,
+      variant:el("cVariant").value, trigger:el("cTrigger").value.trim(), lora_path:el("cLora").value.trim(),
+      lora_weight:+el("cWeight").value, ref_images:charDraft.ref_images||[], appearance:el("cAppear").value}));
+    selChar = saved.id; await load(); fillChar(); note("cmsg","Saved.","ok");
   }catch(e){ note("cmsg", e.message, "err"); }
 };
-el("delChar").onclick = async () => {
+el("delChar").onclick = async () => { if(!selChar) return;
+  await api(`/api/characters/${selChar}`,{method:"DELETE"}); selChar=null; await load(); fillChar(); note("cmsg","Deleted.","ok"); };
+
+el("btnImport").onclick = async () => {
+  if(!selChar) return note("refmsg","Save this person first.","err");
+  const folder = prompt("Paste the folder that holds their pictures:\n\nExample: C:\\Users\\You\\Downloads\\moses");
+  if(!folder) return;
+  note("refmsg","Importing…");
+  try{ const r = await api(`/api/characters/${selChar}/refs/import`, J("POST",{folder}));
+    await load(); await renderRefs(); note("refmsg",`Imported ${r.imported} picture(s).`,"ok");
+  }catch(e){ note("refmsg", e.message, "err"); }
+};
+el("btnUpload").onclick = () => { if(!selChar) return note("refmsg","Save this person first.","err"); el("refFiles").click(); };
+el("refFiles").onchange = async e => {
+  const fd = new FormData(); [...e.target.files].forEach(f=>fd.append("files",f));
+  note("refmsg","Uploading…");
+  try{ const r = await api(`/api/characters/${selChar}/refs/upload`,{method:"POST",body:fd});
+    await load(); await renderRefs(); note("refmsg",`Added ${r.uploaded} picture(s).`,"ok");
+  }catch(err){ note("refmsg", err.message, "err"); }
+  e.target.value="";
+};
+el("btnGen").onclick = async () => {
+  if(!selChar) return note("refmsg","Save this person first.","err");
+  const info = await api(`/api/characters/${selChar}/refs`);
+  if(!info.count) return note("refmsg","Give them at least one picture first.","err");
+  const n = prompt("How many pictures should I make?\n\n(Each takes about 30 seconds)","12");
+  if(!n) return;
+  note("refmsg","Sending to the picture engine…");
+  try{ const r = await api(`/api/characters/${selChar}/refs/generate`, J("POST",{count:+n}));
+    note("refmsg",`Making ${r.queued} pictures. Press "Check progress" in Step 5, then come back.`,"ok");
+  }catch(e){ note("refmsg", e.message, "err"); }
+};
+el("btnExport").onclick = async () => {
   if(!selChar) return;
-  await api(`/api/characters/${selChar}`, {method:"DELETE"});
-  selChar = null; await load(); fillChar(); note("cmsg","deleted","ok");
+  try{ const r = await api(`/api/characters/${selChar}/refs/export`, J("POST",{}));
+    note("refmsg",`Copied ${r.exported} pictures to the training folder.`,"ok");
+    alert("Sent to training folder:\n\n" + r.folder + "\n\nNext, run this to check them:\n\n" + r.next);
+  }catch(e){ note("refmsg", e.message, "err"); }
 };
 
-/* ---- scenes ---- */
-let sceneDraft = {pose_ref:"", depth_ref:""};
+/* ---------- places ---------- */
 function renderScenes(){
-  el("sceneList").innerHTML = P.scenes.length ? P.scenes.map(s => `
+  el("sceneList").innerHTML = P.scenes.length ? P.scenes.map(s=>`
     <div class="item ${selScene===s.id?"sel":""}" data-id="${s.id}">
-      ${s.pose_ref ? `<img class="thumb" src="/api/ref/${s.pose_ref}">` : `<div class="thumb"></div>`}
+      ${s.depth_ref?`<img class="thumb" src="/api/ref/${s.depth_ref}">`:`<div class="thumb"></div>`}
       <div><div class="nm">${s.name}</div>
-      <div class="sub">seed ${s.seed || "random"} · CN ${s.controlnet_strength}</div></div>
-    </div>`).join("") : `<div class="empty">No scenes yet.</div>`;
-  el("sceneList").querySelectorAll(".item").forEach(i =>
-    i.onclick = () => { selScene = i.dataset.id; fillScene(); renderScenes(); });
-  const sel = el("pScene");
-  sel.innerHTML = `<option value="">— no scene —</option>` +
-    P.scenes.map(s => `<option value="${s.id}">${s.name}</option>`).join("");
+      <div class="sub">${s.seed?"🔒 locked":"⚠️ not locked"}</div></div></div>`).join("")
+    : `<div class="empty"><b>No places yet</b>Press "+ Add a place".</div>`;
+  el("sceneList").querySelectorAll(".item").forEach(i=>i.onclick=()=>{ selScene=i.dataset.id; fillScene(); renderScenes(); });
+  el("pScene").innerHTML = `<option value="">— nowhere in particular —</option>` +
+    P.scenes.map(s=>`<option value="${s.id}">${s.name}</option>`).join("");
 }
 function fillScene(){
-  const s = selScene ? P.scenes.find(x => x.id === selScene)
-    : {name:"",environment:"",seed:0,pose_ref:"",depth_ref:"",controlnet_strength:0.7,notes:""};
+  const s = selScene ? P.scenes.find(x=>x.id===selScene)
+    : {name:"",environment:"",seed:0,depth_ref:"",pose_ref:"",controlnet_strength:0.6};
   sceneDraft = JSON.parse(JSON.stringify(s));
-  el("sName").value = s.name; el("sEnv").value = s.environment || "";
-  el("sSeed").value = s.seed || 0; el("sCn").value = s.controlnet_strength ?? 0.7;
-  el("sNotes").value = s.notes || "";
-  refChips(el("sPose"), s.pose_ref ? [s.pose_ref] : [], () => { sceneDraft.pose_ref=""; fillScene2(); });
-  refChips(el("sDepth"), s.depth_ref ? [s.depth_ref] : [], () => { sceneDraft.depth_ref=""; fillScene2(); });
+  el("sName").value=s.name; el("sEnv").value=s.environment||"";
+  el("sSeed").value=s.seed||0; el("sCn").value=s.controlnet_strength??0.6;
+  drawDepthChip();
 }
-function fillScene2(){
-  refChips(el("sPose"), sceneDraft.pose_ref ? [sceneDraft.pose_ref] : [], () => { sceneDraft.pose_ref=""; fillScene2(); });
-  refChips(el("sDepth"), sceneDraft.depth_ref ? [sceneDraft.depth_ref] : [], () => { sceneDraft.depth_ref=""; fillScene2(); });
+function drawDepthChip(){
+  el("sDepth").innerHTML = sceneDraft.depth_ref
+    ? `<span class="chip on" id="rmDepth"><img src="/api/ref/${sceneDraft.depth_ref}" style="width:18px;height:18px;border-radius:3px;vertical-align:-4px;margin-right:6px">remove</span>`
+    : `<span class="chip">none yet</span>`;
+  const b = el("rmDepth"); if(b) b.onclick = ()=>{ sceneDraft.depth_ref=""; drawDepthChip(); };
 }
-el("newScene").onclick = () => { selScene = null; fillScene(); renderScenes(); };
-el("sPoseFile").onchange = async e => { if(e.target.files[0]){
-  sceneDraft.pose_ref = (await upload(e.target.files[0])).name; fillScene2(); e.target.value=""; } };
-el("sDepthFile").onchange = async e => { if(e.target.files[0]){
-  sceneDraft.depth_ref = (await upload(e.target.files[0])).name; fillScene2(); e.target.value=""; } };
+el("newScene").onclick = () => { selScene=null; fillScene(); renderScenes(); };
+el("lockScene").onclick = () => { el("sSeed").value = Math.floor(Math.random()*900000)+100000;
+  note("smsg","Locked. Now press Save place.","ok"); };
+el("sDepthFile").onchange = async e => {
+  if(!e.target.files[0]) return;
+  const fd=new FormData(); fd.append("file",e.target.files[0]);
+  const r = await api("/api/upload",{method:"POST",body:fd});
+  sceneDraft.depth_ref = r.name; drawDepthChip(); e.target.value="";
+};
 el("saveScene").onclick = async () => {
   try{
-    const body = {id: selScene, name: el("sName").value.trim(), environment: el("sEnv").value,
-      seed: +el("sSeed").value, pose_ref: sceneDraft.pose_ref, depth_ref: sceneDraft.depth_ref,
-      controlnet_strength: +el("sCn").value, notes: el("sNotes").value};
-    if(!body.name) throw new Error("name is required");
-    const saved = await api("/api/scenes", {method:"POST",
-      headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
-    selScene = saved.id; await load(); fillScene(); note("smsg","saved","ok");
+    const name = el("sName").value.trim();
+    if(!name) throw new Error("Please name this place");
+    const saved = await api("/api/scenes", J("POST",{id:selScene, name, environment:el("sEnv").value,
+      seed:+el("sSeed").value, depth_ref:sceneDraft.depth_ref||"", pose_ref:sceneDraft.pose_ref||"",
+      controlnet_strength:+el("sCn").value}));
+    selScene = saved.id; await load(); fillScene(); note("smsg","Saved.","ok");
   }catch(e){ note("smsg", e.message, "err"); }
 };
-el("delScene").onclick = async () => {
-  if(!selScene) return;
-  await api(`/api/scenes/${selScene}`, {method:"DELETE"});
-  selScene = null; await load(); fillScene(); note("smsg","deleted","ok");
-};
+el("delScene").onclick = async () => { if(!selScene) return;
+  await api(`/api/scenes/${selScene}`,{method:"DELETE"}); selScene=null; await load(); fillScene(); note("smsg","Deleted.","ok"); };
 
-/* ---- panels ---- */
-let panelChars = [];
-function renderPanelChipList(){
-  el("pChars").innerHTML = P.characters.length ? P.characters.map(c =>
-    `<span class="chip ${panelChars.includes(c.id)?"on":""}" data-id="${c.id}">${c.name}${c.variant?" ("+c.variant+")":""}</span>`
-  ).join("") : `<span class="chip">add characters first</span>`;
-  el("pChars").querySelectorAll(".chip[data-id]").forEach(c => c.onclick = () => {
-    const id = c.dataset.id;
-    panelChars = panelChars.includes(id) ? panelChars.filter(x => x !== id) : [...panelChars, id];
-    renderPanelChipList();
+/* ---------- pictures ---------- */
+let panelChars=[];
+function renderPanelChips(){
+  el("pChars").innerHTML = P.characters.length
+    ? P.characters.map(c=>`<span class="chip ${panelChars.includes(c.id)?"on":""}" data-id="${c.id}">${c.name}${c.variant?" ("+c.variant+")":""}</span>`).join("")
+    : `<span class="chip">add people in Step 2 first</span>`;
+  el("pChars").querySelectorAll(".chip[data-id]").forEach(c=>c.onclick=()=>{
+    const id=c.dataset.id;
+    panelChars = panelChars.includes(id) ? panelChars.filter(x=>x!==id) : [...panelChars,id];
+    renderPanelChips();
   });
 }
 function renderPanels(){
-  const rows = [...P.panels].sort((a,b) => a.page - b.page || a.number - b.number);
-  el("panelEmpty").style.display = rows.length ? "none" : "";
-  el("panelRows").innerHTML = rows.map(p => {
-    const sc = P.scenes.find(s => s.id === p.scene_id);
-    const cast = (p.character_ids || []).map(id =>
-      (P.characters.find(c => c.id === id) || {}).name).filter(Boolean).join(", ");
-    return `<tr data-id="${p.id}" style="cursor:pointer">
-      <td>${p.page}</td><td>${p.number}</td>
-      <td>${sc ? sc.name : "<span style='color:var(--ink3)'>—</span>"}</td>
-      <td>${cast || "<span style='color:var(--ink3)'>—</span>"}</td>
-      <td class="st"><span class="s-${p.status}">${p.status}</span></td></tr>`;
+  const rows=[...P.panels].sort((a,b)=>a.page-b.page||a.number-b.number);
+  el("panelEmpty").style.display = rows.length?"none":"";
+  const label={draft:"not yet",queued:"making…",done:"done ✓",failed:"problem"};
+  el("panelRows").innerHTML = rows.map(p=>{
+    const sc=P.scenes.find(s=>s.id===p.scene_id);
+    const cast=(p.character_ids||[]).map(id=>(P.characters.find(c=>c.id===id)||{}).name).filter(Boolean).join(", ");
+    return `<tr data-id="${p.id}" style="cursor:pointer"><td>${p.page}</td><td>${p.number}</td>
+      <td>${sc?sc.name:"—"}</td><td>${cast||"—"}</td>
+      <td class="st"><span class="s-${p.status}">${label[p.status]||p.status}</span></td></tr>`;
   }).join("");
-  el("panelRows").querySelectorAll("tr").forEach(r =>
-    r.onclick = () => { selPanel = r.dataset.id; fillPanel(); });
+  el("panelRows").querySelectorAll("tr").forEach(r=>r.onclick=()=>{ selPanel=r.dataset.id; fillPanel(); });
 }
 function fillPanel(){
-  const p = selPanel ? P.panels.find(x => x.id === selPanel)
+  const p = selPanel ? P.panels.find(x=>x.id===selPanel)
     : {page:1,number:1,scene_id:"",character_ids:[],action:"",camera:"medium shot",seed:0};
-  el("pPage").value = p.page; el("pNum").value = p.number;
-  el("pScene").value = p.scene_id || ""; el("pAction").value = p.action || "";
-  el("pCam").value = p.camera || "medium shot"; el("pSeed").value = p.seed || 0;
-  panelChars = [...(p.character_ids || [])];
-  renderPanelChipList(); el("pWarn").innerHTML = "";
+  el("pPage").value=p.page; el("pNum").value=p.number; el("pScene").value=p.scene_id||"";
+  el("pAction").value=p.action||""; el("pCam").value=p.camera||"medium shot"; el("pSeed").value=p.seed||0;
+  panelChars=[...(p.character_ids||[])]; renderPanelChips(); el("pWarn").innerHTML="";
 }
 el("savePanel").onclick = async () => {
   try{
-    const body = {id: selPanel, page:+el("pPage").value, number:+el("pNum").value,
-      scene_id: el("pScene").value, character_ids: panelChars, action: el("pAction").value,
-      camera: el("pCam").value, seed:+el("pSeed").value,
-      status: selPanel ? (P.panels.find(x=>x.id===selPanel).status) : "draft"};
-    const saved = await api("/api/panels", {method:"POST",
-      headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
-    selPanel = saved.id; await load(); fillPanel(); note("pmsg","saved","ok");
+    const saved = await api("/api/panels", J("POST",{id:selPanel, page:+el("pPage").value, number:+el("pNum").value,
+      scene_id:el("pScene").value, character_ids:panelChars, action:el("pAction").value,
+      camera:el("pCam").value, seed:+el("pSeed").value,
+      status: selPanel ? P.panels.find(x=>x.id===selPanel).status : "draft"}));
+    selPanel=saved.id; await load(); fillPanel(); note("pmsg","Saved.","ok");
   }catch(e){ note("pmsg", e.message, "err"); }
 };
-el("delPanel").onclick = async () => {
-  if(!selPanel) return;
-  await api(`/api/panels/${selPanel}`, {method:"DELETE"});
-  selPanel = null; await load(); fillPanel(); note("pmsg","deleted","ok");
-};
-function showWarnings(list){
-  el("pWarn").innerHTML = (list && list.length)
-    ? `<div class="warn"><b>Continuity warnings</b><ul>${list.map(w=>`<li>${w}</li>`).join("")}</ul></div>`
-    : "";
-}
+el("delPanel").onclick = async () => { if(!selPanel) return;
+  await api(`/api/panels/${selPanel}`,{method:"DELETE"}); selPanel=null; await load(); fillPanel(); note("pmsg","Deleted.","ok"); };
+function showWarnings(w){ el("pWarn").innerHTML = (w&&w.length)
+  ? `<div class="warn"><b>Things to check</b><ul>${w.map(x=>`<li>${x}</li>`).join("")}</ul></div>` : ""; }
 el("previewPanel").onclick = async () => {
-  if(!selPanel) return note("pmsg","save the panel first","err");
-  try{
-    const s = await api(`/api/panels/${selPanel}/preview`);
-    el("pPreview").textContent =
-      `POSITIVE\n${s.positive}\n\nNEGATIVE\n${s.negative}\n\n` +
-      `seed ${s.seed} · ${s.width}x${s.height} · ${s.steps} steps · cfg ${s.cfg}\n` +
-      `LoRAs: ${s.loras.length ? s.loras.map(l=>`${l.path}@${l.weight}`).join(", ") : "none"}\n` +
-      `IPAdapter refs: ${s.ipadapter_refs.length || "none"}\n` +
-      `ControlNet: pose=${s.controlnet.pose||"-"} depth=${s.controlnet.depth||"-"} @${s.controlnet.strength}`;
+  if(!selPanel) return note("pmsg","Press Save picture first.","err");
+  try{ const s = await api(`/api/panels/${selPanel}/preview`);
+    el("pPreview").textContent = `WILL DRAW:\n${s.positive}\n\nWILL AVOID:\n${s.negative}\n\n`
+      + `size ${s.width}x${s.height} · lock number ${s.seed}`;
     showWarnings(s.warnings);
   }catch(e){ note("pmsg", e.message, "err"); }
 };
 el("queuePanel").onclick = async () => {
-  if(!selPanel) return note("pmsg","save the panel first","err");
-  try{
-    const r = await api(`/api/panels/${selPanel}/queue`, {method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({template: el("tmpl").value})});
-    showWarnings(r.warnings); await load(); note("pmsg",`queued (${r.prompt_id.slice(0,8)})`,"ok");
+  if(!selPanel) return note("pmsg","Press Save picture first.","err");
+  try{ const r = await api(`/api/panels/${selPanel}/queue`, J("POST",{template:el("tmpl").value}));
+    showWarnings(r.warnings); await load(); note("pmsg","Sent to the picture engine.","ok");
   }catch(e){ note("pmsg", e.message, "err"); }
 };
 
-/* ---- style ---- */
+/* ---------- style ---------- */
 function renderStyle(){
-  const s = P.style;
-  el("stPrompt").value = s.prompt; el("stNeg").value = s.negative;
-  el("stCkpt").value = s.checkpoint; el("stLora").value = s.style_lora;
-  el("stLw").value = s.style_lora_weight; el("stSteps").value = s.steps;
-  el("stCfg").value = s.cfg; el("stW").value = s.width; el("stH").value = s.height;
-  el("stSamp").value = s.sampler; el("stSched").value = s.scheduler;
+  const s=P.style;
+  el("stPrompt").value=s.prompt; el("stNeg").value=s.negative; el("stCkpt").value=s.checkpoint;
+  el("stLora").value=s.style_lora; el("stLw").value=s.style_lora_weight; el("stSteps").value=s.steps;
+  el("stCfg").value=s.cfg; el("stW").value=s.width; el("stH").value=s.height;
+  el("stSamp").value=s.sampler; el("stSched").value=s.scheduler;
 }
 el("saveStyle").onclick = async () => {
-  try{
-    await api("/api/style", {method:"PUT", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({prompt: el("stPrompt").value, negative: el("stNeg").value,
-        checkpoint: el("stCkpt").value, style_lora: el("stLora").value,
-        style_lora_weight:+el("stLw").value, steps:+el("stSteps").value, cfg:+el("stCfg").value,
-        width:+el("stW").value, height:+el("stH").value,
-        sampler: el("stSamp").value, scheduler: el("stSched").value})});
-    await load(); note("stmsg","saved","ok");
+  try{ await api("/api/style", J("PUT",{prompt:el("stPrompt").value, negative:el("stNeg").value,
+      checkpoint:el("stCkpt").value, style_lora:el("stLora").value, style_lora_weight:+el("stLw").value,
+      steps:+el("stSteps").value, cfg:+el("stCfg").value, width:+el("stW").value, height:+el("stH").value,
+      sampler:el("stSamp").value, scheduler:el("stSched").value}));
+    await load(); note("stmsg","Saved. This look is now used for every picture.","ok");
   }catch(e){ note("stmsg", e.message, "err"); }
 };
-
-/* ---- mode presets ---- */
 async function applyPreset(name){
-  try{
-    const r = await api(`/api/presets/${name}`, {method:"POST"});
-    await load();
-    el("presetNotes").innerHTML =
-      `<div class="warn"><b>${name.replace("_"," ")} applied</b><ul>${
-        r.notes.map(n=>`<li>${n}</li>`).join("")}</ul></div>`;
-    // Point the queue at this mode's workflow template if it exists.
-    const opt = [...el("tmpl").options].find(o => o.value === r.template);
-    if(opt) el("tmpl").value = r.template;
-    note("pmsg2", `switched to ${name}`, "ok");
+  try{ const r = await api(`/api/presets/${name}`,{method:"POST"}); await load();
+    el("presetNotes").innerHTML = `<div class="warn"><b>Good to know</b><ul>${r.notes.map(n=>`<li>${n}</li>`).join("")}</ul></div>`;
+    const opt=[...el("tmpl").options].find(o=>o.value===r.template); if(opt) el("tmpl").value=r.template;
+    note("pmsg2","Mode changed.","ok");
   }catch(e){ note("pmsg2", e.message, "err"); }
 }
+el("presetPhoto").onclick = () => applyPreset("prototype_photoreal");
 el("presetProto").onclick = () => applyPreset("prototype_sdxl");
 el("presetProd").onclick  = () => applyPreset("production_flux");
 
-/* ---- batch queue ---- */
+/* ---------- make ---------- */
 el("queueAll").onclick = async () => {
-  const ids = [...P.panels].sort((a,b)=>a.page-b.page||a.number-b.number)
-    .filter(p => p.status === "draft" || p.status === "failed").map(p => p.id);
-  if(!ids.length) return note("qmsg","no draft panels to queue","err");
-  el("queueAll").disabled = true;
-  try{
-    const r = await api("/api/queue/batch", {method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({panel_ids: ids, template: el("tmpl").value})});
-    await load();
-    const failed = r.results.filter(x=>!x.ok);
-    note("qmsg", `queued ${r.queued} of ${ids.length}` +
-      (failed.length ? ` — ${failed[0].error}` : ""), failed.length ? "err" : "ok");
-  }catch(e){ note("qmsg", e.message, "err"); }
-  finally{ el("queueAll").disabled = false; }
+  const ids=[...P.panels].sort((a,b)=>a.page-b.page||a.number-b.number)
+    .filter(p=>p.status==="draft"||p.status==="failed").map(p=>p.id);
+  if(!ids.length) return note("qmsg","Nothing left to make.","err");
+  el("queueAll").disabled=true;
+  try{ const r = await api("/api/queue/batch", J("POST",{panel_ids:ids, template:el("tmpl").value}));
+    await load(); const failed=r.results.filter(x=>!x.ok);
+    note("qmsg",`Started ${r.queued} of ${ids.length}.`+(failed.length?` Problem: ${failed[0].error}`:""), failed.length?"err":"ok");
+  }catch(e){ note("qmsg", e.message, "err"); } finally{ el("queueAll").disabled=false; }
 };
 el("refresh").onclick = async () => {
-  try{
-    const r = await api("/api/queue/status");
-    await load();
-    note("qmsg", `${r.updated} completed, ${r.pending} still rendering` +
-      (r.comfy === "unreachable" ? " (ComfyUI unreachable)" : ""), "ok");
+  try{ const r = await api("/api/queue/status"); await load();
+    if(selChar) await renderRefs();
+    note("qmsg", `${r.updated} finished, ${r.pending} still going.`, "ok");
   }catch(e){ note("qmsg", e.message, "err"); }
 };
 
-/* ---- init ---- */
+/* ---------- files ---------- */
+async function renderPaths(){
+  const d = await api("/api/paths").catch(()=>null); if(!d) return;
+  el("pathList").innerHTML = d.paths.map(p=>`<div class="pathrow">
+    <div class="t">${p.what}</div><div class="n">${p.note}</div>
+    <code data-p="${p.path.replace(/\\/g,"\\\\")}">${p.path}</code>
+    <div class="meta">${p.exists?`${p.files} file(s)`:"not created yet"} — click the path to copy</div></div>`).join("");
+  el("pathList").querySelectorAll("code").forEach(c=>c.onclick=()=>{
+    navigator.clipboard?.writeText(c.textContent).then(()=>{
+      const old=c.textContent; c.textContent="copied!"; setTimeout(()=>c.textContent=old,900);
+    }).catch(()=>{});
+  });
+}
+
+/* ---------- gallery ---------- */
+let lastGal=0;
+async function tickGallery(){
+  if(Date.now()-lastGal < 4000) return; lastGal=Date.now();
+  const g = await api("/api/gallery").catch(()=>null); if(!g) return;
+  el("galEmpty").style.display = g.images.length?"none":"";
+  el("gal").innerHTML = g.images.map(p=>`<figure>
+    <img src="/api/thumb/${p}?t=${lastGal}" loading="lazy"><figcaption>${p}</figcaption></figure>`).join("");
+}
+
 (async function init(){
   const t = await api("/api/templates");
-  el("tmpl").innerHTML = t.templates.length
-    ? t.templates.map(x => `<option>${x}</option>`).join("")
-    : `<option value="">no templates in 03_workflows/</option>`;
-  await load(); fillChar(); fillScene(); fillPanel();
+  el("tmpl").innerHTML = t.templates.length ? t.templates.map(x=>`<option>${x}</option>`).join("")
+    : `<option value="">no recipes found</option>`;
+  await load(); fillChar(); fillScene(); fillPanel(); renderPaths();
   checkComfy(); setInterval(checkComfy, 15000);
+  tickGallery(); setInterval(tickGallery, 5000);
 })();
 </script>
 </body>

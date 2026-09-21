@@ -1032,6 +1032,31 @@ def templates() -> dict:
     return {"templates": sorted(f.name for f in TEMPLATES.glob("*_api.json"))}
 
 
+@app.get("/api/paths")
+def paths() -> dict:
+    """Where everything lives, so nobody has to go hunting."""
+    def info(p: Path, what: str, note: str) -> dict:
+        exists = p.exists()
+        n = len([f for f in p.rglob("*") if f.is_file()]) if exists else 0
+        return {"what": what, "path": str(p), "exists": exists,
+                "files": n, "note": note}
+
+    return {"paths": [
+        info(REFS, "Character pictures",
+             "Reference images for each character, as the app stores them"),
+        info(HERE.parent / "01_dataset" / "refs", "Training folders",
+             "Copies ready for training, one folder per character"),
+        info(TEMPLATES, "Recipes",
+             "The workflow files that tell the picture engine what to do"),
+        info(Path(r"C:\ComfyUI\output"), "Finished pictures",
+             "Where the picture engine writes before the app collects them"),
+        info(Path(r"C:\AI-Models"), "Model library",
+             "Shared with every project. Nothing here is duplicated"),
+        info(DATA, "Project file",
+             "project.json holds your characters, places and pictures"),
+    ]}
+
+
 @app.get("/api/stats")
 def stats() -> dict:
     p = load()

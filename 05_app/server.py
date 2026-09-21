@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import time
 import uuid
 from copy import deepcopy
@@ -443,6 +444,24 @@ PRESETS = {
             "Proves topology and continuity, not final quality",
         ],
     },
+    "prototype_photoreal": {
+        "label": "Prototype - RealVisXL Lightning (photoreal, local)",
+        "template": "prototype_sdxl_api.json",
+        "style": {
+            "checkpoint": "RealVisXL_V5.0_Lightning.safetensors",
+            "steps": 8,
+            "cfg": 2.0,
+            "sampler": "euler",
+            "scheduler": "sgm_uniform",
+            "width": 1024,
+            "height": 1024,
+        },
+        "notes": [
+            "Photoreal, for a cinematic book - measured good at 8 steps, CFG 2.0",
+            "IPAdapter: weight 0.6, end 0.5. Higher produces grey mush at low steps",
+            "~30s per panel on a 4 GB card",
+        ],
+    },
     "production_flux": {
         "label": "Production — FLUX.1 (rented 24 GB+ GPU)",
         "template": "solo_panel_api.json",
@@ -532,6 +551,365 @@ def delete_item(kind: str, item_id: str) -> dict:
     return {"ok": True}
 
 
+# ---------------------------------------------------------------- reference sheets
+#
+# Building a training set by hand is the slowest part of the job: generate an
+# image elsewhere, save it, rename it, upload it, repeat thirty times. These
+# endpoints remove that entirely - generate the sheet, or point at a folder
+# something else already filled.
+
+REF_MATRIX = [
+    # (angle token, framing phrase, how many)
+    ("front",         "full body, standing straight, facing camera",              2),
+    ("front",         "waist-up portrait, facing camera",                         3),
+    ("front",         "head and shoulders, facing camera",                        3),
+    ("three_quarter", "full body, three-quarter view",                            3),
+    ("three_quarter", "waist-up portrait, three-quarter view",                    4),
+    ("three_quarter", "head and shoulders, three-quarter view",                   5),
+    ("side",          "full body, exact side profile",                            2),
+    ("side",          "waist-up, exact side profile",                             3),
+    ("side",          "head and shoulders, exact side profile",                   3),
+    ("back",          "full body, seen from behind",                              2),
+    ("back",          "waist-up, three-quarter view from behind",                 2),
+    ("detail",        "tight close-up of the face, neutral expression",           4),
+    ("detail",        "tight close-up of the face, slight turn",                  4),
+]
+
+# Applied to every generated reference. These two rules do more for LoRA
+# quality than anything else, so they are enforced rather than remembered.
+REF_CONSTANTS = ("even neutral lighting, plain uncluttered background, "
+                 "sharp focus, full costume visible")
+REF_NEGATIVE = ("dramatic lighting, harsh shadows, busy background, scenery, "
+                "multiple people, text, watermark, border, panel frame, blurry, "
+                "cropped head, low quality")
+
+
+def char_ref_dir(char_id: str) -> Path:
+    d = REFS / char_id
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def next_ref_index(folder: Path) -> int:
+    n = 0
+    for f in folder.glob("*.png"):
+        m = re.search(r"_(\d+)\.png$", f.name)
+        if m:
+            n = max(n, int(m.group(1)))
+    for f in folder.glob("*.jpg"):
+        m = re.search(r"_(\d+)\.jpg$", f.name)
+        if m:
+            n = max(n, int(m.group(1)))
+    return n + 1
+
+
+def ref_plan(character: dict, count: int) -> list[dict]:
+    """Expand the matrix to `count` jobs, preserving its proportions."""
+    total = sum(n for _, _, n in REF_MATRIX)
+    plan: list[dict] = []
+    for angle, framing, n in REF_MATRIX:
+        share = max(1, round(n * count / total))
+        for _ in range(share):
+            plan.append({"angle": angle, "framing": framing})
+    return plan[:count]
+
+
+def ref_prompt(character: dict, angle: str, framing: str, style: dict) -> str:
+    bits = [character["name"]]
+    if character.get("variant"):
+        bits.append(f"{character['variant']} version")
+    if character.get("appearance"):
+        bits.append(character["appearance"])
+    bits += [framing, REF_CONSTANTS]
+    if style.get("prompt"):
+        bits.append(style["prompt"])
+    return ", ".join(bits)
+
+
+@app.post("/api/characters/{char_id}/refs/generate")
+async def generate_refs(char_id: str, body: dict) -> dict:
+    """
+    Queue a whole reference sheet to ComfyUI from one seed image.
+
+    Each job is named "<trigger>_<angle>_<nn>" so the finished files are
+    already in the shape the dataset validator reads - no renaming step.
+    """
+    p = load()
+    ch = find(p["characters"], char_id)
+    seed_image = body.get("seed_image") or (ch.get("ref_images") or [None])[0]
+    if not seed_image:
+        raise HTTPException(400, "no seed image: upload one reference first")
+
+    count = int(body.get("count", 40))
+    if not 1 <= count <= 120:
+        raise HTTPException(400, "count must be between 1 and 120")
+
+    # ComfyUI reads seed images from its own input folder.
+    comfy_input = Path(body.get("comfy_input", r"C:\ComfyUI\input"))
+    src = REFS / seed_image
+    if not src.is_file():
+        src = char_ref_dir(char_id) / seed_image
+    if not src.is_file():
+        raise HTTPException(400, f"seed image not found: {seed_image}")
+    try:
+        comfy_input.mkdir(parents=True, exist_ok=True)
+        staged = f"seed_{char_id}{src.suffix}"
+        shutil.copy2(src, comfy_input / staged)
+    except Exception as exc:                            # noqa: BLE001
+        raise HTTPException(500, f"cannot stage seed image into ComfyUI input: {exc}")
+
+    style = p["style"]
+    trigger = ch.get("trigger") or re.sub(r"\W+", "", ch["name"].lower()) or "char"
+    folder = char_ref_dir(char_id)
+    start = next_ref_index(folder)
+    plan = ref_plan(ch, count)
+
+    jobs, failed = [], []
+    async with httpx.AsyncClient(timeout=20) as client:
+        for i, step in enumerate(plan):
+            idx = start + i
+            prefix = f"refgen/{trigger}_{step['angle']}_{idx:02d}"
+            spec = {
+                "positive": ref_prompt(ch, step["angle"], step["framing"], style),
+                "negative": REF_NEGATIVE,
+                "seed": 700000 + idx * 17,
+                "steps": style.get("steps", 6),
+                "cfg": style.get("cfg", 1.5),
+                "sampler": style.get("sampler", "euler"),
+                "scheduler": style.get("scheduler", "sgm_uniform"),
+                "width": max(1024, style.get("width", 1024)),
+                "height": max(1024, style.get("height", 1024)),
+                "checkpoint": style["checkpoint"],
+                "loras": [], "ipadapter_refs": [],
+                "controlnet": {"pose": "", "depth": "", "model": "", "image": "",
+                               "strength": 0.0},
+                "warnings": [],
+            }
+            raw = (TEMPLATES / "reference_gen_api.json").read_text(encoding="utf-8")
+            for k, v in {
+                "%%CHECKPOINT%%": spec["checkpoint"],
+                "%%SEED_IMAGE%%": staged,
+                "%%IPADAPTER%%": body.get("ipadapter", "ip-adapter-plus_sdxl_vit-h.safetensors"),
+                "%%CLIP_VISION%%": body.get("clip_vision",
+                                            "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors"),
+                # Measured on an RTX 3050 with RealVisXL Lightning:
+                #   0.85 / 0.80 -> unusable grey mush at 6 steps
+                #   0.70 / 0.60 -> works, but framing follows the seed image
+                #   0.60 / 0.50 -> works, likeness holds, framing loosens
+                # IPAdapter carries composition and background as well as
+                # identity, so a tight hold overrides the requested angle.
+                # Crop seed images to head-and-shoulders for best results.
+                "%%IP_WEIGHT%%": str(body.get("ip_weight", 0.6)),
+                "%%IP_END%%": str(body.get("ip_end", 0.5)),
+                "%%POSITIVE%%": spec["positive"],
+                "%%NEGATIVE%%": spec["negative"],
+                "%%SEED%%": str(spec["seed"]),
+                "%%STEPS%%": str(spec["steps"]),
+                "%%CFG%%": str(spec["cfg"]),
+                "%%SAMPLER%%": spec["sampler"],
+                "%%SCHEDULER%%": spec["scheduler"],
+                "%%WIDTH%%": str(spec["width"]),
+                "%%HEIGHT%%": str(spec["height"]),
+                "%%PREFIX%%": prefix,
+            }.items():
+                raw = raw.replace(k, json.dumps(v)[1:-1])
+            left = PLACEHOLDER.findall(raw)
+            if left:
+                raise HTTPException(500, f"reference template missing values: {sorted(set(left))}")
+
+            try:
+                wf = json.loads(raw)
+                wf.pop("_comment", None)
+                r = await client.post(f"{COMFY}/prompt", json={"prompt": wf})
+                if r.status_code != 200:
+                    # ComfyUI puts the useful detail in the body, not the status.
+                    failed.append({"index": idx, "status": r.status_code,
+                                   "error": r.text[:600]})
+                    continue
+                jobs.append({"prompt_id": r.json()["prompt_id"], "angle": step["angle"],
+                             "index": idx})
+            except Exception as exc:                    # noqa: BLE001
+                failed.append({"index": idx, "error": f"{type(exc).__name__}: {exc}"[:300]})
+
+    ch.setdefault("ref_jobs", []).extend(jobs)
+    save(p)
+    return {"queued": len(jobs), "failed": failed,
+            "note": "call /refs/collect once ComfyUI finishes rendering"}
+
+
+@app.post("/api/characters/{char_id}/refs/collect")
+async def collect_refs(char_id: str, body: dict | None = None) -> dict:
+    """Pull finished reference renders out of ComfyUI and attach them."""
+    p = load()
+    ch = find(p["characters"], char_id)
+    jobs = ch.get("ref_jobs") or []
+    if not jobs:
+        # Same shape on every path, so callers never have to special-case it.
+        return {"collected": 0, "pending": 0,
+                "total_refs": len(ch.get("ref_images", []))}
+
+    comfy_out = Path((body or {}).get("comfy_output", r"C:\ComfyUI\output"))
+    folder = char_ref_dir(char_id)
+    collected, still = 0, []
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        for job in jobs:
+            try:
+                r = await client.get(f"{COMFY}/history/{job['prompt_id']}")
+                hist = r.json().get(job["prompt_id"]) if r.status_code == 200 else None
+            except Exception:                            # noqa: BLE001
+                still.append(job); continue
+            if not hist:
+                still.append(job); continue
+            images = [i for o in hist.get("outputs", {}).values() for i in o.get("images", [])]
+            if not images:
+                still.append(job); continue
+            for img in images:
+                src = comfy_out / img.get("subfolder", "") / img["filename"]
+                if not src.is_file():
+                    continue
+                dest = folder / img["filename"]
+                shutil.copy2(src, dest)
+                rel = f"{char_id}/{dest.name}"
+                if rel not in ch.setdefault("ref_images", []):
+                    ch["ref_images"].append(rel)
+                collected += 1
+
+    ch["ref_jobs"] = still
+    save(p)
+    return {"collected": collected, "pending": len(still),
+            "total_refs": len(ch.get("ref_images", []))}
+
+
+@app.post("/api/characters/{char_id}/refs/import")
+def import_refs(char_id: str, body: dict) -> dict:
+    """
+    Copy every image from a folder on this machine into a character.
+
+    This is the answer to "Gemini made me forty pictures and now I have to
+    upload them one at a time": point at the download folder instead.
+    """
+    p = load()
+    ch = find(p["characters"], char_id)
+    src_dir = Path(body.get("folder", "")).expanduser()
+    if not src_dir.is_dir():
+        raise HTTPException(400, f"not a folder: {src_dir}")
+
+    exts = {".png", ".jpg", ".jpeg", ".webp"}
+    files = sorted(f for f in src_dir.iterdir() if f.suffix.lower() in exts and f.is_file())
+    if not files:
+        raise HTTPException(400, f"no images in {src_dir}")
+
+    trigger = ch.get("trigger") or re.sub(r"\W+", "", ch["name"].lower()) or "char"
+    folder = char_ref_dir(char_id)
+    idx = next_ref_index(folder)
+    imported, skipped = [], []
+
+    for f in files:
+        # Keep an angle already present in the filename; otherwise mark it
+        # unlabelled rather than guessing, so the validator can flag it.
+        low = f.name.lower()
+        angle = next((a for a, pat in {
+            "front": "front", "three_quarter": "three", "side": "side",
+            "back": "back", "detail": "close"}.items() if pat in low), "unlabelled")
+        dest = folder / f"{trigger}_{angle}_{idx:02d}{f.suffix.lower()}"
+        try:
+            shutil.copy2(f, dest)
+            rel = f"{char_id}/{dest.name}"
+            if rel not in ch.setdefault("ref_images", []):
+                ch["ref_images"].append(rel)
+            imported.append(dest.name)
+            idx += 1
+        except Exception as exc:                        # noqa: BLE001
+            skipped.append({"file": f.name, "error": str(exc)[:120]})
+
+    save(p)
+    return {"imported": len(imported), "skipped": skipped,
+            "files": imported[:60], "total_refs": len(ch.get("ref_images", []))}
+
+
+@app.post("/api/characters/{char_id}/refs/upload")
+async def upload_refs(char_id: str, files: list[UploadFile] = File(...)) -> dict:
+    """Many files at once, rather than one at a time."""
+    p = load()
+    ch = find(p["characters"], char_id)
+    trigger = ch.get("trigger") or re.sub(r"\W+", "", ch["name"].lower()) or "char"
+    folder = char_ref_dir(char_id)
+    idx = next_ref_index(folder)
+    saved = []
+    for f in files:
+        suffix = Path(f.filename or "ref.png").suffix.lower()
+        if suffix not in (".png", ".jpg", ".jpeg", ".webp"):
+            continue
+        low = (f.filename or "").lower()
+        angle = next((a for a, pat in {
+            "front": "front", "three_quarter": "three", "side": "side",
+            "back": "back", "detail": "close"}.items() if pat in low), "unlabelled")
+        dest = folder / f"{trigger}_{angle}_{idx:02d}{suffix}"
+        dest.write_bytes(await f.read())
+        rel = f"{char_id}/{dest.name}"
+        if rel not in ch.setdefault("ref_images", []):
+            ch["ref_images"].append(rel)
+        saved.append(dest.name)
+        idx += 1
+    save(p)
+    return {"uploaded": len(saved), "files": saved,
+            "total_refs": len(ch.get("ref_images", []))}
+
+
+@app.delete("/api/characters/{char_id}/refs")
+def delete_ref(char_id: str, name: str) -> dict:
+    """Cull a bad reference. Culling matters as much as generating."""
+    p = load()
+    ch = find(p["characters"], char_id)
+    ch["ref_images"] = [r for r in ch.get("ref_images", []) if r != name]
+    target = (REFS / name).resolve()
+    if REFS.resolve() in target.parents and target.is_file():
+        target.unlink()
+    save(p)
+    return {"ok": True, "total_refs": len(ch["ref_images"])}
+
+
+@app.post("/api/characters/{char_id}/refs/export")
+def export_refs(char_id: str, body: dict | None = None) -> dict:
+    """Copy a character's references into the dataset folder, ready to validate."""
+    p = load()
+    ch = find(p["characters"], char_id)
+    trigger = ch.get("trigger") or re.sub(r"\W+", "", ch["name"].lower()) or "char"
+    dest = Path((body or {}).get(
+        "dest", HERE.parent / "01_dataset" / "refs" / trigger))
+    dest.mkdir(parents=True, exist_ok=True)
+    n = 0
+    for rel in ch.get("ref_images", []):
+        src = REFS / rel
+        if src.is_file():
+            shutil.copy2(src, dest / src.name)
+            n += 1
+    return {
+        "exported": n, "folder": str(dest),
+        "next": f"python prepare_dataset.py --input {dest} --trigger {trigger} --check",
+    }
+
+
+@app.get("/api/characters/{char_id}/refs")
+def list_refs(char_id: str) -> dict:
+    p = load()
+    ch = find(p["characters"], char_id)
+    by_angle: dict[str, int] = {}
+    for rel in ch.get("ref_images", []):
+        m = re.search(r"_(front|three_quarter|side|back|detail|unlabelled)_", rel)
+        key = m.group(1) if m else "unlabelled"
+        by_angle[key] = by_angle.get(key, 0) + 1
+    missing = [a for a in ("front", "three_quarter", "side") if not by_angle.get(a)]
+    return {
+        "refs": ch.get("ref_images", []),
+        "count": len(ch.get("ref_images", [])),
+        "by_angle": by_angle,
+        "missing_required_angles": missing,
+        "pending_jobs": len(ch.get("ref_jobs") or []),
+    }
+
+
 @app.post("/api/upload")
 async def upload(file: UploadFile = File(...)) -> dict:
     suffix = Path(file.filename or "ref.png").suffix.lower()
@@ -542,10 +920,16 @@ async def upload(file: UploadFile = File(...)) -> dict:
     return {"name": name, "url": f"/api/ref/{name}"}
 
 
-@app.get("/api/ref/{name}")
+@app.get("/api/ref/{name:path}")
 def get_ref(name: str) -> FileResponse:
+    # name may be "file.png" or "<char_id>/file.png" once a character has its
+    # own reference folder, so allow one level of nesting but nothing above
+    # REFS itself.
     path = (REFS / name).resolve()
-    if REFS.resolve() != path.parent or not path.is_file():
+    root = REFS.resolve()
+    if root != path.parent and root not in path.parents:
+        raise HTTPException(404, "not found")
+    if not path.is_file():
         raise HTTPException(404, "not found")
     return FileResponse(path)
 

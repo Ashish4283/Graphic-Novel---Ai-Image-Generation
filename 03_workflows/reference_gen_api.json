@@ -1,0 +1,84 @@
+{
+  "_comment": "Reference-sheet generator. Takes one seed image of a character and produces a new view of the same person via IPAdapter, at a specified angle and framing. Run repeatedly across the angle/framing matrix to build a 25-40 image training set. Neutral lighting and plain background are enforced in the prompt because both materially affect LoRA quality.",
+
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": { "ckpt_name": "%%CHECKPOINT%%" },
+    "_meta": { "title": "1 - Checkpoint" }
+  },
+
+  "2": {
+    "class_type": "LoadImage",
+    "inputs": { "image": "%%SEED_IMAGE%%", "upload": "image" },
+    "_meta": { "title": "2 - Seed reference of the character" }
+  },
+  "3": {
+    "class_type": "IPAdapterModelLoader",
+    "inputs": { "ipadapter_file": "%%IPADAPTER%%" },
+    "_meta": { "title": "3 - IPAdapter" }
+  },
+  "4": {
+    "class_type": "CLIPVisionLoader",
+    "inputs": { "clip_name": "%%CLIP_VISION%%" },
+    "_meta": { "title": "4 - CLIP Vision (must match the adapter: vit-h here)" }
+  },
+  "5": {
+    "class_type": "IPAdapterAdvanced",
+    "inputs": {
+      "model": ["1", 0],
+      "ipadapter": ["3", 0],
+      "image": ["2", 0],
+      "clip_vision": ["4", 0],
+      "weight": %%IP_WEIGHT%%,
+      "weight_type": "linear",
+      "combine_embeds": "concat",
+      "start_at": 0.0,
+      "end_at": %%IP_END%%,
+      "embeds_scaling": "V only"
+    },
+    "_meta": { "title": "5 - Carry the likeness. end_at releases the hold so the requested angle can actually change" }
+  },
+
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "%%POSITIVE%%", "clip": ["1", 1] },
+    "_meta": { "title": "6 - Positive: identity, angle, framing, neutral light, plain background" }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "%%NEGATIVE%%", "clip": ["1", 1] },
+    "_meta": { "title": "7 - Negative" }
+  },
+
+  "8": {
+    "class_type": "EmptyLatentImage",
+    "inputs": { "width": %%WIDTH%%, "height": %%HEIGHT%%, "batch_size": 1 },
+    "_meta": { "title": "8 - 1024 minimum, LoRA training needs it" }
+  },
+  "9": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": %%SEED%%,
+      "steps": %%STEPS%%,
+      "cfg": %%CFG%%,
+      "sampler_name": "%%SAMPLER%%",
+      "scheduler": "%%SCHEDULER%%",
+      "denoise": 1.0,
+      "model": ["5", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["8", 0]
+    },
+    "_meta": { "title": "9 - Sampler" }
+  },
+  "10": {
+    "class_type": "VAEDecode",
+    "inputs": { "samples": ["9", 0], "vae": ["1", 2] },
+    "_meta": { "title": "10 - Decode" }
+  },
+  "11": {
+    "class_type": "SaveImage",
+    "inputs": { "filename_prefix": "%%PREFIX%%", "images": ["10", 0] },
+    "_meta": { "title": "11 - Save. Prefix carries the angle so the dataset validator can read it" }
+  }
+}

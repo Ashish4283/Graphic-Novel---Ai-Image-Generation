@@ -111,6 +111,45 @@ drifts between panels. This is the concrete argument for character LoRAs
   GPU: ControlNet `strength`, `end_percent`, and whether the depth source
   contains a character.
 
+## 5. IPAdapter settings, measured
+
+Generating a reference sheet from a seed photo. RealVisXL V5.0 Lightning on a
+4 GB card, 1024px.
+
+| weight / end_at | steps | cfg | Result |
+|---|---|---|---|
+| 0.85 / 0.80 | 6 | 1.5 | **Unusable** - flat grey mush, no image |
+| 0.70 / 0.60 | 6 | 1.5 | Good likeness, but framing copies the seed |
+| **0.60 / 0.50** | **8** | **2.0** | **Good likeness, framing loosens** |
+| 0.50 / 0.40 | 8 | 2.0 | Likeness starts to weaken |
+
+Separately verified that RealVisXL Lightning **without** IPAdapter produces
+excellent photoreal portraits at 6 steps / CFG 1.5, so the failure above was
+the adapter strength, not the checkpoint.
+
+### IPAdapter carries composition, not just identity
+
+Asking for "head and shoulders portrait, plain grey studio background" while
+seeded with a full-body outdoor photo returns a full-body outdoor shot. The
+adapter transfers framing and background along with the face.
+
+This is the same shape of problem as ControlNet locking pose (section 3): one
+signal doing two jobs.
+
+**Practical consequence: crop seed images to head-and-shoulders** before using
+them to generate a reference sheet. A tight face crop carries identity without
+dragging the original scene along.
+
+## 6. Ship-blocking bug found: `_comment` in templates
+
+Workflow templates carry a `_comment` key for documentation. ComfyUI treats
+every top-level key as a node, so an un-stripped `_comment` returns HTTP 500
+with no useful message. `build_workflow` strips it; the reference generator
+originally did not. Both now do.
+
+Worth remembering: ComfyUI's `/prompt` puts the real reason in the response
+**body**, not the status line. Logging only the status hides it.
+
 ## Evidence
 
 `docs/evidence/` holds the six renders and the depth map:

@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Graphic Novel Studio</title>
+<style>
+:root{
+  --bg:#14120F; --panel:#1C1A16; --panel2:#252119; --line:#332D24;
+  --ink:#F0EAE0; --ink2:#B5AC9D; --ink3:#7C7466;
+  --accent:#D08A3C; --accent-dim:#8A5C28;
+  --ok:#5F9E6E; --warn:#C9A227; --err:#C4614F;
+  --t1:#8A6BC4; --t2:#3F8C99;
+  --ui:system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.55 var(--ui)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 18px 70px}
+h1,h2,h3{margin:0;font-weight:600}
+button,input,select,textarea{font-family:inherit;font-size:14px}
+
+/* header */
+header{display:flex;align-items:center;gap:14px;padding:18px 0 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+h1{font-size:19px;letter-spacing:-.01em}
+#pname{background:transparent;border:1px solid transparent;color:var(--ink2);padding:4px 8px;border-radius:6px;min-width:220px}
+#pname:hover,#pname:focus{border-color:var(--line);background:var(--panel);outline:none}
+.pill{margin-left:auto;font:11.5px var(--mono);padding:5px 11px;border-radius:99px;border:1px solid var(--line);color:var(--ink3);background:var(--panel)}
+.pill.on{color:var(--ok);border-color:rgba(95,158,110,.45)}
+.pill.off{color:var(--err);border-color:rgba(196,97,79,.45)}
+
+/* tabs */
+nav{display:flex;gap:4px;padding:12px 0;flex-wrap:wrap}
+nav button{background:transparent;border:1px solid transparent;color:var(--ink3);padding:7px 14px;border-radius:7px;cursor:pointer}
+nav button:hover{color:var(--ink2)}
+nav button.on{background:var(--panel);border-color:var(--line);color:var(--accent)}
+
+section{display:none}
+section.on{display:block}
+
+/* cards + layout */
+.grid{display:grid;grid-template-columns:340px 1fr;gap:16px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+.card h3{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:13px}
+
+label{display:block;font-size:12px;color:var(--ink2);margin:11px 0 5px}
+input,select,textarea{width:100%;padding:8px 10px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{resize:vertical;min-height:62px}
+.row{display:flex;gap:10px}.row>*{flex:1}
+
+button.act{background:var(--accent);color:#1A1509;border:0;border-radius:7px;padding:9px 14px;font-weight:600;cursor:pointer}
+button.act:hover{filter:brightness(1.1)}
+button.act:disabled{opacity:.45;cursor:not-allowed}
+button.ghost{background:var(--panel2);color:var(--ink2);border:1px solid var(--line);border-radius:7px;padding:8px 13px;cursor:pointer}
+button.ghost:hover{border-color:var(--accent);color:var(--accent)}
+button.danger{background:transparent;color:var(--err);border:1px solid rgba(196,97,79,.4);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px}
+.btns{display:flex;gap:9px;margin-top:15px;flex-wrap:wrap}
+
+/* lists */
+.list{display:flex;flex-direction:column;gap:7px;max-height:560px;overflow:auto}
+.item{background:var(--panel2);border:1px solid transparent;border-radius:8px;padding:11px 13px;cursor:pointer;display:flex;gap:11px;align-items:center}
+.item:hover{border-color:var(--line)}
+.item.sel{border-color:var(--accent)}
+.item .nm{font-weight:600;font-size:14px}
+.item .sub{font-size:12px;color:var(--ink3)}
+.item .right{margin-left:auto;display:flex;gap:7px;align-items:center}
+.tag{font:10.5px var(--mono);padding:2px 7px;border-radius:99px;white-space:nowrap}
+.tag.t1{background:rgba(138,107,196,.18);color:var(--t1)}
+.tag.t2{background:rgba(63,140,153,.18);color:var(--t2)}
+.thumb{width:34px;height:34px;border-radius:6px;object-fit:cover;background:var(--panel)}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:13px 15px}
+.stat b{display:block;font:600 22px/1.1 var(--mono);font-variant-numeric:tabular-nums}
+.stat span{font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em}
+
+/* panels table */
+table{width:100%;border-collapse:collapse}
+th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle}
+th{font:10.5px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);font-weight:500}
+tbody tr:hover{background:var(--panel2)}
+td.st span{font:10.5px var(--mono);padding:2px 8px;border-radius:99px}
+.s-draft{background:var(--panel2);color:var(--ink3)}
+.s-queued{background:rgba(201,162,39,.18);color:var(--warn)}
+.s-done{background:rgba(95,158,110,.18);color:var(--ok)}
+.s-failed{background:rgba(196,97,79,.18);color:var(--err)}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{font-size:12px;padding:4px 10px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);cursor:pointer;color:var(--ink2)}
+.chip.on{border-color:var(--accent);color:var(--accent)}
+
+pre.out{background:#0F0D0A;border:1px solid var(--line);border-radius:8px;padding:13px;
+  font:12px/1.65 var(--mono);color:var(--ink2);white-space:pre-wrap;word-break:break-word;max-height:330px;overflow:auto;margin:0}
+.warn{background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.4);border-radius:8px;padding:11px 14px;margin-top:11px}
+.warn b{display:block;font:10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--warn);margin-bottom:6px}
+.warn ul{margin:0;padding-left:18px;color:var(--ink2);font-size:13px}
+.msg{font:12px var(--mono);color:var(--ink3);min-height:17px;margin-top:9px}
+.msg.err{color:var(--err)}
+.msg.ok{color:var(--ok)}
+.empty{color:var(--ink3);font-size:13px;padding:14px 0;text-align:center}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.gal figure{margin:0;background:var(--panel2);border-radius:8px;overflow:hidden}
+.gal img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.gal figcaption{font:10.5px var(--mono);color:var(--ink3);padding:6px 8px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Graphic Novel Studio</h1>
+    <input id="pname" title="Project name">
+    <span class="pill" id="comfy">checking ComfyUI…</span>
+  </header>
+
+  <nav>
+    <button data-tab="dash" class="on">Dashboard</button>
+    <button data-tab="chars">Characters</button>
+    <button data-tab="scenes">Scenes</button>
+    <button data-tab="panels">Panels</button>
+    <button data-tab="style">Style</button>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <section id="dash" class="on">
+    <div class="stats" id="stats"></div>
+    <div class="grid">
+      <div class="card">
+        <h3>Production queue</h3>
+        <p style="color:var(--ink2);font-size:13.5px;margin:0 0 12px">
+          Queue every draft panel in page order, then watch them complete.</p>
+        <label for="tmpl">Workflow template</label>
+        <select id="tmpl"></select>
+        <div class="btns">
+          <button class="act" id="queueAll">Queue all drafts</button>
+          <button class="ghost" id="refresh">Refresh status</button>
+        </div>
+        <div class="msg" id="qmsg"></div>
+      </div>
+      <div class="card">
+        <h3>Recent output</h3>
+        <div class="gal" id="gal"></div>
+        <div class="empty" id="galEmpty">Nothing rendered yet.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHARACTERS -->
+  <section id="chars">
+    <div class="grid">
+      <div class="card">
+        <h3>Cast</h3>
+        <div class="list" id="charList"></div>
+        <div class="btns"><button class="ghost" id="newChar">+ New character</button></div>
+      </div>
+      <div class="card">
+        <h3 id="charTitle">Character</h3>
+        <div class="row">
+          <div><label for="cName">Name</label><input id="cName" placeholder="Moses"></div>
+          <div><label for="cVariant">Variant</label>
+            <select id="cVariant"><option value="">single age</option>
+              <option>young</option><option>older</option></select></div>
+        </div>
+        <label for="cTier">Tier</label>
+        <select id="cTier">
+          <option value="1">Tier 1 — trained FLUX LoRA (leads, many pages)</option>
+          <option value="2">Tier 2 — IPAdapter / PuLID reference (supporting cast)</option>
+        </select>
+        <div id="t1fields">
+          <div class="row">
+            <div><label for="cTrigger">Trigger token</label><input id="cTrigger" placeholder="mosesv1"></div>
+            <div><label for="cWeight">LoRA weight</label><input id="cWeight" type="number" step="0.05" value="0.85"></div>
+          </div>
+          <label for="cLora">LoRA file</label>
+          <input id="cLora" placeholder="moses_young_rank32.safetensors">
+        </div>
+        <label for="cAppear">Appearance (costume, distinguishing detail)</label>
+        <textarea id="cAppear" placeholder="grey robe, wooden staff, full beard"></textarea>
+        <label>Reference images</label>
+        <input type="file" id="cRefFile" accept="image/*" multiple>
+        <div class="chips" id="cRefs"></div>
+        <label for="cNotes">Notes</label>
+        <textarea id="cNotes"></textarea>
+        <div class="btns">
+          <button class="act" id="saveChar">Save character</button>
+          <button class="danger" id="delChar">Delete</button>
+        </div>
+        <div class="msg" id="cmsg"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCENES -->
+  <section id="scenes">
+    <div class="grid">
+      <div class="card">
+        <h3>Scenes</h3>
+        <div class="list" id="sceneList"></div>
+        <div class="btns"><button class="ghost" id="newScene">+ New scene</button></div>
+      </div>
+      <div class="card">
+        <h3>Scene</h3>
+        <label for="sName">Name</label>
+        <input id="sName" placeholder="Pharaoh's throne room">
+        <label for="sEnv">Environment — locked description reused by every panel</label>
+        <textarea id="sEnv" placeholder="vast sandstone hall, carved pillars, shafts of light from high windows"></textarea>
+        <div class="row">
+          <div><label for="sSeed">Seed (0 = random)</label><input id="sSeed" type="number" value="0"></div>
+          <div><label for="sCn">ControlNet strength</label><input id="sCn" type="number" step="0.05" value="0.7"></div>
+        </div>
+        <label>OpenPose reference</label>
+        <input type="file" id="sPoseFile" accept="image/*">
+        <div class="chips" id="sPose"></div>
+        <label>Depth staging reference</label>
+        <input type="file" id="sDepthFile" accept="image/*">
+        <div class="chips" id="sDepth"></div>
+        <label for="sNotes">Notes</label>
+        <textarea id="sNotes"></textarea>
+        <div class="btns">
+          <button class="act" id="saveScene">Save scene</button>
+          <button class="danger" id="delScene">Delete</button>
+        </div>
+        <div class="msg" id="smsg"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANELS -->
+  <section id="panels">
+    <div class="grid">
+      <div class="card">
+        <h3>Panel</h3>
+        <div class="row">
+          <div><label for="pPage">Page</label><input id="pPage" type="number" value="1" min="1"></div>
+          <div><label for="pNum">Panel #</label><input id="pNum" type="number" value="1" min="1"></div>
+        </div>
+        <label for="pScene">Scene</label>
+        <select id="pScene"></select>
+        <label>Characters in this panel</label>
+        <div class="chips" id="pChars"></div>
+        <label for="pAction">Action</label>
+        <textarea id="pAction" placeholder="raising his staff toward the parted sea"></textarea>
+        <div class="row">
+          <div><label for="pCam">Camera</label>
+            <select id="pCam">
+              <option>wide establishing shot</option><option>medium shot</option>
+              <option>close-up</option><option>extreme close-up</option>
+              <option>low angle</option><option>high angle</option>
+              <option>over-the-shoulder</option><option>dutch angle</option>
+            </select></div>
+          <div><label for="pSeed">Seed (0 = scene seed)</label><input id="pSeed" type="number" value="0"></div>
+        </div>
+        <div class="btns">
+          <button class="act" id="savePanel">Save panel</button>
+          <button class="ghost" id="previewPanel">Preview prompt</button>
+          <button class="ghost" id="queuePanel">Queue</button>
+          <button class="danger" id="delPanel">Delete</button>
+        </div>
+        <div class="msg" id="pmsg"></div>
+        <div id="pWarn"></div>
+        <label style="margin-top:14px">Composed prompt</label>
+        <pre class="out" id="pPreview">Press "Preview prompt" to see exactly what this panel will send to ComfyUI.</pre>
+      </div>
+      <div class="card">
+        <h3>Panels</h3>
+        <table>
+          <thead><tr><th>Pg</th><th>#</th><th>Scene</th><th>Cast</th><th>Status</th></tr></thead>
+          <tbody id="panelRows"></tbody>
+        </table>
+        <div class="empty" id="panelEmpty">No panels yet.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STYLE -->
+  <section id="style">
+    <div class="card" style="max-width:720px">
+      <h3>Global art style — applied to every panel</h3>
+      <label for="stPrompt">Style prompt</label>
+      <textarea id="stPrompt"></textarea>
+      <label for="stNeg">Negative prompt</label>
+      <textarea id="stNeg"></textarea>
+      <div class="row">
+        <div><label for="stCkpt">Checkpoint</label><input id="stCkpt"></div>
+        <div><label for="stLora">Style LoRA</label><input id="stLora"></div>
+      </div>
+      <div class="row">
+        <div><label for="stLw">Style LoRA weight</label><input id="stLw" type="number" step="0.05"></div>
+        <div><label for="stSteps">Steps</label><input id="stSteps" type="number"></div>
+        <div><label for="stCfg">CFG</label><input id="stCfg" type="number" step="0.1"></div>
+      </div>
+      <div class="row">
+        <div><label for="stW">Width</label><input id="stW" type="number"></div>
+        <div><label for="stH">Height</label><input id="stH" type="number"></div>
+        <div><label for="stSamp">Sampler</label><input id="stSamp"></div>
+        <div><label for="stSched">Scheduler</label><input id="stSched"></div>
+      </div>
+      <div class="btns"><button class="act" id="saveStyle">Save style</button></div>
+      <div class="msg" id="stmsg"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const el = id => document.getElementById(id);
+let P = null, selChar = null, selScene = null, selPanel = null;
+
+async function api(path, opts){
+  const r = await fetch(path, opts);
+  if(!r.ok){
+    let d; try { d = (await r.json()).detail; } catch { d = r.statusText; }
+    throw new Error(typeof d === "string" ? d : JSON.stringify(d));
+  }
+  return r.status === 204 ? null : r.json();
+}
+function note(id, text, kind){
+  const n = el(id); n.textContent = text || "";
+  n.className = "msg" + (kind ? " " + kind : "");
+  if(text) setTimeout(() => { if(n.textContent === text) n.textContent = ""; }, 5000);
+}
+
+/* ---- tabs ---- */
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.remove("on"));
+  document.querySelectorAll("section").forEach(x => x.classList.remove("on"));
+  b.classList.add("on"); el(b.dataset.tab).classList.add("on");
+});
+
+/* ---- load ---- */
+async function load(){
+  P = await api("/api/project");
+  el("pname").value = P.name;
+  renderChars(); renderScenes(); renderPanels(); renderStyle(); renderStats();
+}
+el("pname").onchange = async e => {
+  await api("/api/project/name", {method:"PUT", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({name: e.target.value})});
+};
+
+/* ---- stats + comfy ---- */
+async function renderStats(){
+  const s = await api("/api/stats");
+  const st = s.by_status || {};
+  el("stats").innerHTML = [
+    ["Characters", s.characters], ["Tier 1 LoRA", s.tier1], ["Tier 2 ref", s.tier2],
+    ["Scenes", s.scenes], ["Pages", s.pages], ["Panels", s.panels],
+    ["Done", st.done || 0], ["Queued", st.queued || 0]
+  ].map(([k,v]) => `<div class="stat"><b>${v}</b><span>${k}</span></div>`).join("");
+}
+async function checkComfy(){
+  const p = el("comfy");
+  try{
+    const s = await api("/api/comfy/status");
+    p.className = "pill " + (s.online ? "on" : "off");
+    p.textContent = s.online ? "ComfyUI connected" : "ComfyUI offline";
+    p.title = s.online ? "" : (s.error || "");
+  }catch{ p.className = "pill off"; p.textContent = "ComfyUI offline"; }
+}
+
+/* ---- uploads ---- */
+async function upload(file){
+  const fd = new FormData(); fd.append("file", file);
+  return api("/api/upload", {method:"POST", body: fd});
+}
+function refChips(container, names, onRemove){
+  container.innerHTML = names.length
+    ? names.map((n,i) => `<span class="chip on" data-i="${i}">
+        <img src="/api/ref/${n}" style="width:18px;height:18px;border-radius:3px;vertical-align:-4px;margin-right:6px">
+        ${n.slice(0,10)}… ✕</span>`).join("")
+    : `<span class="chip">none</span>`;
+  container.querySelectorAll(".chip[data-i]").forEach(c =>
+    c.onclick = () => onRemove(+c.dataset.i));
+}
+
+/* ---- characters ---- */
+function renderChars(){
+  el("charList").innerHTML = P.characters.length ? P.characters.map(c => `
+    <div class="item ${selChar===c.id?"sel":""}" data-id="${c.id}">
+      ${c.ref_images?.length ? `<img class="thumb" src="/api/ref/${c.ref_images[0]}">`
+                             : `<div class="thumb"></div>`}
+      <div><div class="nm">${c.name}${c.variant?` <span class="sub">(${c.variant})</span>`:""}</div>
+      <div class="sub">${c.tier===1 ? (c.lora_path||"no LoRA set") : `${c.ref_images?.length||0} reference(s)`}</div></div>
+      <div class="right"><span class="tag t${c.tier}">T${c.tier}</span></div>
+    </div>`).join("") : `<div class="empty">No characters yet.</div>`;
+  el("charList").querySelectorAll(".item").forEach(i =>
+    i.onclick = () => { selChar = i.dataset.id; fillChar(); renderChars(); });
+  el("pChars") && renderPanelChipList();
+}
+function blankChar(){ return {name:"",tier:1,variant:"",trigger:"",lora_path:"",
+  lora_weight:0.85,ref_images:[],appearance:"",notes:""}; }
+let charDraft = blankChar();
+function fillChar(){
+  const c = selChar ? P.characters.find(x => x.id === selChar) : blankChar();
+  charDraft = JSON.parse(JSON.stringify(c));
+  el("charTitle").textContent = selChar ? `Character — ${c.name}` : "New character";
+  el("cName").value = c.name; el("cVariant").value = c.variant || "";
+  el("cTier").value = c.tier; el("cTrigger").value = c.trigger || "";
+  el("cWeight").value = c.lora_weight ?? 0.85; el("cLora").value = c.lora_path || "";
+  el("cAppear").value = c.appearance || ""; el("cNotes").value = c.notes || "";
+  el("t1fields").style.display = String(c.tier) === "1" ? "" : "none";
+  refChips(el("cRefs"), charDraft.ref_images || [], i => {
+    charDraft.ref_images.splice(i,1); refChips(el("cRefs"), charDraft.ref_images, ()=>{}); fillRefs();
+  });
+}
+function fillRefs(){ refChips(el("cRefs"), charDraft.ref_images || [], i => {
+  charDraft.ref_images.splice(i,1); fillRefs(); }); }
+el("cTier").onchange = e => el("t1fields").style.display = e.target.value === "1" ? "" : "none";
+el("newChar").onclick = () => { selChar = null; fillChar(); renderChars(); };
+el("cRefFile").onchange = async e => {
+  for(const f of e.target.files){ const r = await upload(f); charDraft.ref_images.push(r.name); }
+  fillRefs(); e.target.value = "";
+};
+el("saveChar").onclick = async () => {
+  try{
+    const body = {id: selChar, name: el("cName").value.trim(), tier: +el("cTier").value,
+      variant: el("cVariant").value, trigger: el("cTrigger").value.trim(),
+      lora_path: el("cLora").value.trim(), lora_weight: +el("cWeight").value,
+      ref_images: charDraft.ref_images, appearance: el("cAppear").value,
+      notes: el("cNotes").value};
+    if(!body.name) throw new Error("name is required");
+    const saved = await api("/api/characters", {method:"POST",
+      headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
+    selChar = saved.id; await load(); fillChar();
+    note("cmsg", "saved", "ok");
+  }catch(e){ note("cmsg", e.message, "err"); }
+};
+el("delChar").onclick = async () => {
+  if(!selChar) return;
+  await api(`/api/characters/${selChar}`, {method:"DELETE"});
+  selChar = null; await load(); fillChar(); note("cmsg","deleted","ok");
+};
+
+/* ---- scenes ---- */
+let sceneDraft = {pose_ref:"", depth_ref:""};
+function renderScenes(){
+  el("sceneList").innerHTML = P.scenes.length ? P.scenes.map(s => `
+    <div class="item ${selScene===s.id?"sel":""}" data-id="${s.id}">
+      ${s.pose_ref ? `<img class="thumb" src="/api/ref/${s.pose_ref}">` : `<div class="thumb"></div>`}
+      <div><div class="nm">${s.name}</div>
+      <div class="sub">seed ${s.seed || "random"} · CN ${s.controlnet_strength}</div></div>
+    </div>`).join("") : `<div class="empty">No scenes yet.</div>`;
+  el("sceneList").querySelectorAll(".item").forEach(i =>
+    i.onclick = () => { selScene = i.dataset.id; fillScene(); renderScenes(); });
+  const sel = el("pScene");
+  sel.innerHTML = `<option value="">— no scene —</option>` +
+    P.scenes.map(s => `<option value="${s.id}">${s.name}</option>`).join("");
+}
+function fillScene(){
+  const s = selScene ? P.scenes.find(x => x.id === selScene)
+    : {name:"",environment:"",seed:0,pose_ref:"",depth_ref:"",controlnet_strength:0.7,notes:""};
+  sceneDraft = JSON.parse(JSON.stringify(s));
+  el("sName").value = s.name; el("sEnv").value = s.environment || "";
+  el("sSeed").value = s.seed || 0; el("sCn").value = s.controlnet_strength ?? 0.7;
+  el("sNotes").value = s.notes || "";
+  refChips(el("sPose"), s.pose_ref ? [s.pose_ref] : [], () => { sceneDraft.pose_ref=""; fillScene2(); });
+  refChips(el("sDepth"), s.depth_ref ? [s.depth_ref] : [], () => { sceneDraft.depth_ref=""; fillScene2(); });
+}
+function fillScene2(){
+  refChips(el("sPose"), sceneDraft.pose_ref ? [sceneDraft.pose_ref] : [], () => { sceneDraft.pose_ref=""; fillScene2(); });
+  refChips(el("sDepth"), sceneDraft.depth_ref ? [sceneDraft.depth_ref] : [], () => { sceneDraft.depth_ref=""; fillScene2(); });
+}
+el("newScene").onclick = () => { selScene = null; fillScene(); renderScenes(); };
+el("sPoseFile").onchange = async e => { if(e.target.files[0]){
+  sceneDraft.pose_ref = (await upload(e.target.files[0])).name; fillScene2(); e.target.value=""; } };
+el("sDepthFile").onchange = async e => { if(e.target.files[0]){
+  sceneDraft.depth_ref = (await upload(e.target.files[0])).name; fillScene2(); e.target.value=""; } };
+el("saveScene").onclick = async () => {
+  try{
+    const body = {id: selScene, name: el("sName").value.trim(), environment: el("sEnv").value,
+      seed: +el("sSeed").value, pose_ref: sceneDraft.pose_ref, depth_ref: sceneDraft.depth_ref,
+      controlnet_strength: +el("sCn").value, notes: el("sNotes").value};
+    if(!body.name) throw new Error("name is required");
+    const saved = await api("/api/scenes", {method:"POST",
+      headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
+    selScene = saved.id; await load(); fillScene(); note("smsg","saved","ok");
+  }catch(e){ note("smsg", e.message, "err"); }
+};
+el("delScene").onclick = async () => {
+  if(!selScene) return;
+  await api(`/api/scenes/${selScene}`, {method:"DELETE"});
+  selScene = null; await load(); fillScene(); note("smsg","deleted","ok");
+};
+
+/* ---- panels ---- */
+let panelChars = [];
+function renderPanelChipList(){
+  el("pChars").innerHTML = P.characters.length ? P.characters.map(c =>
+    `<span class="chip ${panelChars.includes(c.id)?"on":""}" data-id="${c.id}">${c.name}${c.variant?" ("+c.variant+")":""}</span>`
+  ).join("") : `<span class="chip">add characters first</span>`;
+  el("pChars").querySelectorAll(".chip[data-id]").forEach(c => c.onclick = () => {
+    const id = c.dataset.id;
+    panelChars = panelChars.includes(id) ? panelChars.filter(x => x !== id) : [...panelChars, id];
+    renderPanelChipList();
+  });
+}
+function renderPanels(){
+  const rows = [...P.panels].sort((a,b) => a.page - b.page || a.number - b.number);
+  el("panelEmpty").style.display = rows.length ? "none" : "";
+  el("panelRows").innerHTML = rows.map(p => {
+    const sc = P.scenes.find(s => s.id === p.scene_id);
+    const cast = (p.character_ids || []).map(id =>
+      (P.characters.find(c => c.id === id) || {}).name).filter(Boolean).join(", ");
+    return `<tr data-id="${p.id}" style="cursor:pointer">
+      <td>${p.page}</td><td>${p.number}</td>
+      <td>${sc ? sc.name : "<span style='color:var(--ink3)'>—</span>"}</td>
+      <td>${cast || "<span style='color:var(--ink3)'>—</span>"}</td>
+      <td class="st"><span class="s-${p.status}">${p.status}</span></td></tr>`;
+  }).join("");
+  el("panelRows").querySelectorAll("tr").forEach(r =>
+    r.onclick = () => { selPanel = r.dataset.id; fillPanel(); });
+}
+function fillPanel(){
+  const p = selPanel ? P.panels.find(x => x.id === selPanel)
+    : {page:1,number:1,scene_id:"",character_ids:[],action:"",camera:"medium shot",seed:0};
+  el("pPage").value = p.page; el("pNum").value = p.number;
+  el("pScene").value = p.scene_id || ""; el("pAction").value = p.action || "";
+  el("pCam").value = p.camera || "medium shot"; el("pSeed").value = p.seed || 0;
+  panelChars = [...(p.character_ids || [])];
+  renderPanelChipList(); el("pWarn").innerHTML = "";
+}
+el("savePanel").onclick = async () => {
+  try{
+    const body = {id: selPanel, page:+el("pPage").value, number:+el("pNum").value,
+      scene_id: el("pScene").value, character_ids: panelChars, action: el("pAction").value,
+      camera: el("pCam").value, seed:+el("pSeed").value,
+      status: selPanel ? (P.panels.find(x=>x.id===selPanel).status) : "draft"};
+    const saved = await api("/api/panels", {method:"POST",
+      headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
+    selPanel = saved.id; await load(); fillPanel(); note("pmsg","saved","ok");
+  }catch(e){ note("pmsg", e.message, "err"); }
+};
+el("delPanel").onclick = async () => {
+  if(!selPanel) return;
+  await api(`/api/panels/${selPanel}`, {method:"DELETE"});
+  selPanel = null; await load(); fillPanel(); note("pmsg","deleted","ok");
+};
+function showWarnings(list){
+  el("pWarn").innerHTML = (list && list.length)
+    ? `<div class="warn"><b>Continuity warnings</b><ul>${list.map(w=>`<li>${w}</li>`).join("")}</ul></div>`
+    : "";
+}
+el("previewPanel").onclick = async () => {
+  if(!selPanel) return note("pmsg","save the panel first","err");
+  try{
+    const s = await api(`/api/panels/${selPanel}/preview`);
+    el("pPreview").textContent =
+      `POSITIVE\n${s.positive}\n\nNEGATIVE\n${s.negative}\n\n` +
+      `seed ${s.seed} · ${s.width}x${s.height} · ${s.steps} steps · cfg ${s.cfg}\n` +
+      `LoRAs: ${s.loras.length ? s.loras.map(l=>`${l.path}@${l.weight}`).join(", ") : "none"}\n` +
+      `IPAdapter refs: ${s.ipadapter_refs.length || "none"}\n` +
+      `ControlNet: pose=${s.controlnet.pose||"-"} depth=${s.controlnet.depth||"-"} @${s.controlnet.strength}`;
+    showWarnings(s.warnings);
+  }catch(e){ note("pmsg", e.message, "err"); }
+};
+el("queuePanel").onclick = async () => {
+  if(!selPanel) return note("pmsg","save the panel first","err");
+  try{
+    const r = await api(`/api/panels/${selPanel}/queue`, {method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({template: el("tmpl").value})});
+    showWarnings(r.warnings); await load(); note("pmsg",`queued (${r.prompt_id.slice(0,8)})`,"ok");
+  }catch(e){ note("pmsg", e.message, "err"); }
+};
+
+/* ---- style ---- */
+function renderStyle(){
+  const s = P.style;
+  el("stPrompt").value = s.prompt; el("stNeg").value = s.negative;
+  el("stCkpt").value = s.checkpoint; el("stLora").value = s.style_lora;
+  el("stLw").value = s.style_lora_weight; el("stSteps").value = s.steps;
+  el("stCfg").value = s.cfg; el("stW").value = s.width; el("stH").value = s.height;
+  el("stSamp").value = s.sampler; el("stSched").value = s.scheduler;
+}
+el("saveStyle").onclick = async () => {
+  try{
+    await api("/api/style", {method:"PUT", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({prompt: el("stPrompt").value, negative: el("stNeg").value,
+        checkpoint: el("stCkpt").value, style_lora: el("stLora").value,
+        style_lora_weight:+el("stLw").value, steps:+el("stSteps").value, cfg:+el("stCfg").value,
+        width:+el("stW").value, height:+el("stH").value,
+        sampler: el("stSamp").value, scheduler: el("stSched").value})});
+    await load(); note("stmsg","saved","ok");
+  }catch(e){ note("stmsg", e.message, "err"); }
+};
+
+/* ---- batch queue ---- */
+el("queueAll").onclick = async () => {
+  const ids = [...P.panels].sort((a,b)=>a.page-b.page||a.number-b.number)
+    .filter(p => p.status === "draft" || p.status === "failed").map(p => p.id);
+  if(!ids.length) return note("qmsg","no draft panels to queue","err");
+  el("queueAll").disabled = true;
+  try{
+    const r = await api("/api/queue/batch", {method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({panel_ids: ids, template: el("tmpl").value})});
+    await load();
+    const failed = r.results.filter(x=>!x.ok);
+    note("qmsg", `queued ${r.queued} of ${ids.length}` +
+      (failed.length ? ` — ${failed[0].error}` : ""), failed.length ? "err" : "ok");
+  }catch(e){ note("qmsg", e.message, "err"); }
+  finally{ el("queueAll").disabled = false; }
+};
+el("refresh").onclick = async () => {
+  try{
+    const r = await api("/api/queue/status");
+    await load();
+    note("qmsg", `${r.updated} completed, ${r.pending} still rendering` +
+      (r.comfy === "unreachable" ? " (ComfyUI unreachable)" : ""), "ok");
+  }catch(e){ note("qmsg", e.message, "err"); }
+};
+
+/* ---- init ---- */
+(async function init(){
+  const t = await api("/api/templates");
+  el("tmpl").innerHTML = t.templates.length
+    ? t.templates.map(x => `<option>${x}</option>`).join("")
+    : `<option value="">no templates in 03_workflows/</option>`;
+  await load(); fillChar(); fillScene(); fillPanel();
+  checkComfy(); setInterval(checkComfy, 15000);
+})();
+</script>
+</body>
+</html>

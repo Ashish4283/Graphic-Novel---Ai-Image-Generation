@@ -14,3 +14,6 @@ _t/
 __pycache__/
 *.pyc
 .venv/
+
+# app runtime state (project data, uploads, outputs)
+05_app/data/

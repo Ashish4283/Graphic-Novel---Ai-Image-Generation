@@ -558,21 +558,45 @@ def delete_item(kind: str, item_id: str) -> dict:
 # endpoints remove that entirely - generate the sheet, or point at a folder
 # something else already filled.
 
+# Each angle needs its own NEGATIVE as well as a positive phrase. Asking for
+# "seen from behind" without also refusing "front view, face visible" returns
+# a front view: the model's strong prior is a face pointing at the camera, and
+# a mild positive phrase does not overcome it. Measured - adding the opposing
+# negative is what turns the figure around.
 REF_MATRIX = [
-    # (angle token, framing phrase, how many)
-    ("front",         "full body, standing straight, facing camera",              2),
-    ("front",         "waist-up portrait, facing camera",                         3),
-    ("front",         "head and shoulders, facing camera",                        3),
-    ("three_quarter", "full body, three-quarter view",                            3),
-    ("three_quarter", "waist-up portrait, three-quarter view",                    4),
-    ("three_quarter", "head and shoulders, three-quarter view",                   5),
-    ("side",          "full body, exact side profile",                            2),
-    ("side",          "waist-up, exact side profile",                             3),
-    ("side",          "head and shoulders, exact side profile",                   3),
-    ("back",          "full body, seen from behind",                              2),
-    ("back",          "waist-up, three-quarter view from behind",                 2),
-    ("detail",        "tight close-up of the face, neutral expression",           4),
-    ("detail",        "tight close-up of the face, slight turn",                  4),
+    # (angle token, framing phrase, angle-specific negative, how many)
+    ("front", "full body, standing straight, facing the camera directly",
+     "back view, side profile, turned away", 2),
+    ("front", "waist-up portrait, facing the camera directly",
+     "back view, side profile, turned away", 3),
+    ("front", "head and shoulders, facing the camera directly",
+     "back view, side profile, turned away", 3),
+
+    ("three_quarter", "full body, three-quarter view, body turned 45 degrees away",
+     "straight-on front view, exact side profile", 3),
+    ("three_quarter", "waist-up portrait, three-quarter view, head turned 45 degrees",
+     "straight-on front view, exact side profile", 4),
+    ("three_quarter", "head and shoulders, three-quarter view, face turned 45 degrees",
+     "straight-on front view, exact side profile", 5),
+
+    ("side", "full body, exact side profile, facing to the left, 90 degree profile",
+     "front view, facing camera, three-quarter view, back view", 2),
+    ("side", "waist-up, exact side profile, nose pointing left, 90 degree profile",
+     "front view, facing camera, three-quarter view, back view", 3),
+    ("side", "head and shoulders, exact side profile silhouette, 90 degree profile",
+     "front view, facing camera, three-quarter view, back view", 3),
+
+    ("back", "full body, seen from directly behind, back view, facing away from the "
+             "camera, back of the head visible, no face",
+     "front view, face visible, looking at camera, profile, eyes", 2),
+    ("back", "seen from behind over the shoulder, three-quarter view from the rear, "
+             "facing away from the camera",
+     "front view, face visible, looking at camera", 2),
+
+    ("detail", "tight close-up of the face, neutral expression, facing the camera",
+     "full body, wide shot, back view", 4),
+    ("detail", "tight close-up of the face, head turned slightly",
+     "full body, wide shot, back view", 4),
 ]
 
 # Applied to every generated reference. These two rules do more for LoRA
@@ -604,26 +628,60 @@ def next_ref_index(folder: Path) -> int:
 
 
 def ref_plan(character: dict, count: int) -> list[dict]:
-    """Expand the matrix to `count` jobs, preserving its proportions."""
-    total = sum(n for _, _, n in REF_MATRIX)
-    plan: list[dict] = []
-    for angle, framing, n in REF_MATRIX:
+    """
+    Expand the matrix to `count` jobs, preserving its proportions.
+
+    Interleaved by angle rather than grouped, so a run stopped halfway still
+    covers every angle instead of thirty front views and nothing else.
+    """
+    total = sum(n for _, _, _, n in REF_MATRIX)
+    buckets: list[list[dict]] = []
+    for angle, framing, neg, n in REF_MATRIX:
         share = max(1, round(n * count / total))
-        for _ in range(share):
-            plan.append({"angle": angle, "framing": framing})
+        buckets.append([{"angle": angle, "framing": framing, "negative": neg}
+                        for _ in range(share)])
+
+    plan: list[dict] = []
+    while len(plan) < count and any(buckets):
+        for b in buckets:
+            if b and len(plan) < count:
+                plan.append(b.pop())
+        buckets = [b for b in buckets if b]
     return plan[:count]
 
 
 def ref_prompt(character: dict, angle: str, framing: str, style: dict) -> str:
-    bits = [character["name"]]
+    """
+    Order matters, and it is not the obvious order.
+
+    Leading with the identity description ("long white beard, weathered face")
+    makes the model draw a face, which quietly defeats a back view no matter
+    how the angle is worded. Putting the framing FIRST gives the angle the
+    emphasis, with identity following.
+
+    For a back view the facial description is omitted entirely: there is no
+    face in the shot, and describing one only argues for turning him round.
+    """
+    bits = [framing]
+    name = character["name"]
     if character.get("variant"):
-        bits.append(f"{character['variant']} version")
-    if character.get("appearance"):
+        name += f", {character['variant']}"
+    bits.append(name)
+
+    if angle == "back":
+        # Costume and build only - the things still visible from behind.
+        bits.append("hooded robe, standing")
+    elif character.get("appearance"):
         bits.append(character["appearance"])
-    bits += [framing, REF_CONSTANTS]
+
+    constants = REF_CONSTANTS
+    if angle == "back":
+        constants = constants.replace(", full costume visible", "")
+    bits.append(constants)
+
     if style.get("prompt"):
         bits.append(style["prompt"])
-    return ", ".join(bits)
+    return ", ".join(b for b in bits if b)
 
 
 @app.post("/api/characters/{char_id}/refs/generate")
@@ -671,7 +729,9 @@ async def generate_refs(char_id: str, body: dict) -> dict:
             prefix = f"refgen/{trigger}_{step['angle']}_{idx:02d}"
             spec = {
                 "positive": ref_prompt(ch, step["angle"], step["framing"], style),
-                "negative": REF_NEGATIVE,
+                # The angle's own negative comes FIRST: it is the one doing
+                # the work, and the general list is only hygiene.
+                "negative": f"{step.get('negative', '')}, {REF_NEGATIVE}".strip(", "),
                 "seed": 700000 + idx * 17,
                 "steps": style.get("steps", 6),
                 "cfg": style.get("cfg", 1.5),
@@ -689,18 +749,25 @@ async def generate_refs(char_id: str, body: dict) -> dict:
             for k, v in {
                 "%%CHECKPOINT%%": spec["checkpoint"],
                 "%%SEED_IMAGE%%": staged,
-                "%%IPADAPTER%%": body.get("ipadapter", "ip-adapter-plus_sdxl_vit-h.safetensors"),
+                # The FACE adapter, not the general one: it carries identity
+                # with far less of the seed image's scene and composition.
+                "%%IPADAPTER%%": body.get(
+                    "ipadapter", "ip-adapter-plus-face_sdxl_vit-h.safetensors"),
                 "%%CLIP_VISION%%": body.get("clip_vision",
                                             "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors"),
-                # Measured on an RTX 3050 with RealVisXL Lightning:
-                #   0.85 / 0.80 -> unusable grey mush at 6 steps
-                #   0.70 / 0.60 -> works, but framing follows the seed image
-                #   0.60 / 0.50 -> works, likeness holds, framing loosens
-                # IPAdapter carries composition and background as well as
-                # identity, so a tight hold overrides the requested angle.
-                # Crop seed images to head-and-shoulders for best results.
-                "%%IP_WEIGHT%%": str(body.get("ip_weight", 0.6)),
-                "%%IP_END%%": str(body.get("ip_end", 0.5)),
+                # start_at is the setting that matters. The first steps of
+                # sampling decide composition, so an adapter engaged from step
+                # 0 locks the pose and every requested angle comes out as a
+                # copy of the seed. Measured, asking for a back view
+                # (distance from seed, higher = the angle actually changed):
+                #   general adapter, w0.60 start 0.00  -> 30.5  (no change)
+                #   general adapter, w0.60 start 0.35  -> 45.6
+                #   face adapter,    w0.60 start 0.00  -> 40.5
+                #   face adapter,    w0.70 start 0.30  -> 45.9  (true back view)
+                #   no adapter at all                  -> 52.9  (the ceiling)
+                "%%IP_WEIGHT%%": str(body.get("ip_weight", 0.7)),
+                "%%IP_START%%": str(body.get("ip_start", 0.3)),
+                "%%IP_END%%": str(body.get("ip_end", 0.9)),
                 "%%POSITIVE%%": spec["positive"],
                 "%%NEGATIVE%%": spec["negative"],
                 "%%SEED%%": str(spec["seed"]),

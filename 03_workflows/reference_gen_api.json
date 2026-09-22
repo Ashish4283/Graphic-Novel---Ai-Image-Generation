@@ -32,11 +32,11 @@
       "weight": %%IP_WEIGHT%%,
       "weight_type": "linear",
       "combine_embeds": "concat",
-      "start_at": 0.0,
+      "start_at": %%IP_START%%,
       "end_at": %%IP_END%%,
       "embeds_scaling": "V only"
     },
-    "_meta": { "title": "5 - Carry the likeness. end_at releases the hold so the requested angle can actually change" }
+    "_meta": { "title": "5 - Carry the likeness. start_at is the important one: the first steps decide composition, so holding identity from step 0 locks the pose and every angle comes out the same. Start at 0.3 and the requested angle is free." }
   },
 
   "6": {

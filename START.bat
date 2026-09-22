@@ -74,8 +74,17 @@ set /a TRIES+=1
 call :is_up %STUDIO_PORT%
 if "!UP!"=="1" goto studio_ready
 if !TRIES! GEQ 20 (
-    echo  ERROR: Studio did not start. Check the Studio window.
-    echo  Missing packages?  pip install -r 05_app\requirements.txt
+    echo.
+    echo  Studio has not answered on port %STUDIO_PORT% after 40 seconds.
+    echo.
+    echo  What is listening right now:
+    netstat -ano ^| findstr /r /c:"LISTENING" ^| findstr /c:":%STUDIO_PORT% " ^| findstr /c:":%COMFY_PORT% "
+    echo.
+    echo  If a line above shows :%STUDIO_PORT%, it IS running - just open
+    echo    http://127.0.0.1:%STUDIO_PORT%
+    echo  Otherwise check the minimised "Graphic Novel Studio" window, or run:
+    echo    pip install -r 05_app\requirements.txt
+    echo.
     pause
     exit /b 1
 )

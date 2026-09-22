@@ -122,6 +122,15 @@ pre.out{background:#0F0D0A;border:1px solid var(--line);border-radius:8px;paddin
 .gal figcaption{font:10.5px var(--mono);color:var(--ink3);padding:6px;text-align:center;word-break:break-all}
 .gal .x{position:absolute;top:5px;right:5px;background:rgba(0,0,0,.65);color:#fff;border:0;border-radius:5px;padding:2px 7px;cursor:pointer;font-size:12px}
 
+/* paste / drop zone */
+.drop{margin-top:12px;border:2px dashed var(--line);border-radius:10px;padding:18px 16px;
+  text-align:center;color:var(--ink3);cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop:focus{border-color:var(--accent);outline:none}
+.drop.hot{border-color:var(--accent);background:rgba(208,138,60,.08)}
+.drop .big{font-size:15px;color:var(--ink2);font-weight:600}
+.drop .small{font-size:12.5px;margin-top:5px;line-height:1.5}
+.drop label{text-align:left;display:inline-block}
+
 /* files tab */
 .paths{display:flex;flex-direction:column;gap:9px}
 .pathrow{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:12px 15px}
@@ -263,6 +272,23 @@ pre.out{background:#0F0D0A;border:1px solid var(--line);border-radius:8px;paddin
           <button class="ghost" id="btnExport">➡️ Send to training</button>
         </div>
         <input type="file" id="refFiles" accept="image/*" multiple hidden>
+
+        <div class="drop" id="dropZone" tabindex="0">
+          <div class="big">📋 Paste a picture here</div>
+          <div class="small">Copy one from Gemini, click this box, then press <b>Ctrl+V</b>.<br>
+            You can also drag pictures straight onto this box.</div>
+          <div style="margin-top:10px">
+            <label for="pasteAngle" style="margin:0 0 4px">These pictures are:</label>
+            <select id="pasteAngle" style="max-width:260px;margin:0 auto">
+              <option value="unlabelled">not sure / mixed</option>
+              <option value="front">front — facing the camera</option>
+              <option value="three_quarter">three quarter — turned 45°</option>
+              <option value="side">side — full profile</option>
+              <option value="back">back — from behind</option>
+              <option value="detail">face close-up</option>
+            </select>
+          </div>
+        </div>
         <div class="msg" id="refmsg"></div>
         <div class="gal" id="refGal" style="margin-top:12px"></div>
       </div>
@@ -542,6 +568,48 @@ el("refFiles").onchange = async e => {
   }catch(err){ note("refmsg", err.message, "err"); }
   e.target.value="";
 };
+/* ---- paste / drag-and-drop reference pictures ----
+   The angle is carried in the filename we invent, because that is what the
+   server reads to work out coverage. Pasting with "front" selected produces
+   mosesold_front_07.png, exactly as if it had been named properly. */
+async function addImageFiles(files){
+  if(!selChar) return note("refmsg","Pick or save a person first.","err");
+  const imgs = [...files].filter(f => f && f.type && f.type.startsWith("image/"));
+  if(!imgs.length) return note("refmsg","That was not a picture.","err");
+  const angle = el("pasteAngle").value;
+  const fd = new FormData();
+  imgs.forEach((f,i) => {
+    const ext = (f.type.split("/")[1] || "png").replace("jpeg","jpg");
+    fd.append("files", f, `pasted ${angle} ${Date.now()}_${i}.${ext}`);
+  });
+  note("refmsg", `Adding ${imgs.length} picture(s)…`);
+  try{
+    const r = await api(`/api/characters/${selChar}/refs/upload`, {method:"POST", body: fd});
+    await load(); await renderRefs();
+    note("refmsg", `Added ${r.uploaded} picture(s).`, "ok");
+  }catch(e){ note("refmsg", e.message, "err"); }
+}
+
+const dz = el("dropZone");
+dz.addEventListener("click", () => dz.focus());
+["dragenter","dragover"].forEach(ev => dz.addEventListener(ev, e => {
+  e.preventDefault(); dz.classList.add("hot"); }));
+["dragleave","drop"].forEach(ev => dz.addEventListener(ev, e => {
+  e.preventDefault(); dz.classList.remove("hot"); }));
+dz.addEventListener("drop", e => addImageFiles(e.dataTransfer.files));
+
+// Listen on the document so Ctrl+V works wherever the cursor is, but only
+// while the Characters step is open - otherwise a paste into a text box
+// would try to upload.
+document.addEventListener("paste", e => {
+  if(!el("chars").classList.contains("on")) return;
+  const tag = (e.target.tagName || "").toLowerCase();
+  if(tag === "input" || tag === "textarea") return;
+  const items = [...(e.clipboardData?.items || [])];
+  const files = items.filter(i => i.kind === "file").map(i => i.getAsFile()).filter(Boolean);
+  if(files.length){ e.preventDefault(); addImageFiles(files); }
+});
+
 el("btnGen").onclick = async () => {
   if(!selChar) return note("refmsg","Save this person first.","err");
   const info = await api(`/api/characters/${selChar}/refs`);

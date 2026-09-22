@@ -608,6 +608,30 @@ REF_NEGATIVE = ("dramatic lighting, harsh shadows, busy background, scenery, "
                 "cropped head, low quality")
 
 
+def angle_from_name(filename: str) -> str:
+    """
+    Read the angle out of a filename, or say so when it cannot.
+
+    Order matters: "three_quarter" contains neither "front" nor "side", but a
+    file called "three quarter side" should read as three-quarter, so the more
+    specific patterns are checked first. Anything unrecognised is recorded as
+    unlabelled rather than guessed - a wrong label is worse than no label,
+    because the dataset validator trusts it.
+    """
+    low = filename.lower()
+    for angle, patterns in (
+        ("three_quarter", ("three_quarter", "three quarter", "three-quarter",
+                           "threequarter", "3/4", "3-4", "_34_")),
+        ("detail",        ("detail", "close-up", "closeup", "close up", "face")),
+        ("back",          ("back", "behind", "rear")),
+        ("side",          ("side", "profile")),
+        ("front",         ("front", "facing")),
+    ):
+        if any(p in low for p in patterns):
+            return angle
+    return "unlabelled"
+
+
 def char_ref_dir(char_id: str) -> Path:
     d = REFS / char_id
     d.mkdir(parents=True, exist_ok=True)
@@ -873,12 +897,7 @@ def import_refs(char_id: str, body: dict) -> dict:
     imported, skipped = [], []
 
     for f in files:
-        # Keep an angle already present in the filename; otherwise mark it
-        # unlabelled rather than guessing, so the validator can flag it.
-        low = f.name.lower()
-        angle = next((a for a, pat in {
-            "front": "front", "three_quarter": "three", "side": "side",
-            "back": "back", "detail": "close"}.items() if pat in low), "unlabelled")
+        angle = angle_from_name(f.name)
         dest = folder / f"{trigger}_{angle}_{idx:02d}{f.suffix.lower()}"
         try:
             shutil.copy2(f, dest)
@@ -908,10 +927,7 @@ async def upload_refs(char_id: str, files: list[UploadFile] = File(...)) -> dict
         suffix = Path(f.filename or "ref.png").suffix.lower()
         if suffix not in (".png", ".jpg", ".jpeg", ".webp"):
             continue
-        low = (f.filename or "").lower()
-        angle = next((a for a, pat in {
-            "front": "front", "three_quarter": "three", "side": "side",
-            "back": "back", "detail": "close"}.items() if pat in low), "unlabelled")
+        angle = angle_from_name(f.filename or "")
         dest = folder / f"{trigger}_{angle}_{idx:02d}{suffix}"
         dest.write_bytes(await f.read())
         rel = f"{char_id}/{dest.name}"
